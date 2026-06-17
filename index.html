@@ -472,6 +472,29 @@ function InventoryPlatformInner() {
     setOrders(prev => prev.map(o => o.id !== orderId ? o : { ...o, status: "海運中", shipped: true }));
   };
 
+  // When a container actually arrives and is unloaded into the warehouse:
+  // adds every model's quantity in that container into the destination
+  // warehouse's stock, then removes the container and its transit items
+  // (since they're no longer "in transit" — they're now real inventory).
+  // Note: unlike deleteContainer, this intentionally does NOT restore any
+  // deductedFromUnassigned amount back to the unassigned pool — the goods
+  // genuinely arrived and are now correctly reflected in warehouse stock,
+  // so restoring to unassigned would double-count them.
+  const confirmContainerReceived = (containerId) => {
+    const container = containers.find(c => c.id === containerId);
+    if (!container) return;
+    const items = transitItems.filter(t => t.containerId === containerId);
+
+    setProducts(prev => prev.map(p => {
+      const matching = items.filter(t => t.model === p.model);
+      if (matching.length === 0) return p;
+      const addQty = matching.reduce((a, t) => a + t.qty, 0);
+      return { ...p, [container.warehouse]: p[container.warehouse] + addQty };
+    }));
+    setContainers(prev => prev.filter(c => c.id !== containerId));
+    setTransitItems(prev => prev.filter(t => t.containerId !== containerId));
+  };
+
   // ---------- derived data ----------
   const lowStockCount = useMemo(() => products.filter(p => p.safetyStock > 0 && (p.kh + p.tc + p.tp) < p.safetyStock).length, [products]);
   const khLow = useMemo(() => products.filter(p => p.kh < 3).length, [products]);
@@ -635,6 +658,7 @@ function InventoryPlatformInner() {
               poPending={poPending} setPoPending={setPoPending}
               unassigned={unassigned} setUnassigned={setUnassigned}
               isAdmin={isAdmin} productByModel={productByModel}
+              onConfirmReceived={confirmContainerReceived}
             />
           ) : page === "orders" ? (
             <OrdersPage orders={orders} setOrders={setOrders} isAdmin={isAdmin} products={products} onTransferItem={transferOrderItemToUnassigned} onConfirmShipment={confirmOrderShipment} />
@@ -851,11 +875,11 @@ function InventoryPage({ products, setProducts, isAdmin, transitItems, container
                 <th style={thStyle}>型號</th>
                 {wh === "all" ? (
                   <>
-                    <th style={thStyle}>高雄倉</th>
+                    <th style={{ ...thStyle, borderLeft: "2px solid #E4E7EC" }}>高雄倉</th>
                     <th style={thStyle}>在途</th>
-                    <th style={thStyle}>台中倉</th>
+                    <th style={{ ...thStyle, borderLeft: "2px solid #E4E7EC" }}>台中倉</th>
                     <th style={thStyle}>在途</th>
-                    <th style={thStyle}>台北倉</th>
+                    <th style={{ ...thStyle, borderLeft: "2px solid #E4E7EC" }}>台北倉</th>
                     <th style={thStyle}>在途</th>
                   </>
                 ) : (
@@ -880,11 +904,11 @@ function InventoryPage({ products, setProducts, isAdmin, transitItems, container
                     <td style={{ ...tdStyle, fontWeight: 700 }}>{p.model}</td>
                     {wh === "all" ? (
                       <>
-                        <td style={tdStyle}>{isEditing && isAdmin ? <NumberCell id={cellId("kh")} nextId={cellId("tc")} value={p.kh} onChange={v => updateField(p.model, "kh", v)} /> : <span style={cellNumStyle(p.kh)}>{p.kh}</span>}</td>
+                        <td style={{ ...tdStyle, borderLeft: "2px solid #E4E7EC" }}>{isEditing && isAdmin ? <NumberCell id={cellId("kh")} nextId={cellId("tc")} value={p.kh} onChange={v => updateField(p.model, "kh", v)} /> : <span style={cellNumStyle(p.kh)}>{p.kh}</span>}</td>
                         <td style={tdStyle}>{transitForModel(p.model, "kh") > 0 ? <span style={{ fontFamily: "monospace", color: "#0D9488", fontWeight: 600 }}>+{transitForModel(p.model, "kh")}</span> : <span style={{ color: "#D1D5DB" }}>—</span>}</td>
-                        <td style={tdStyle}>{isEditing && isAdmin ? <NumberCell id={cellId("tc")} nextId={cellId("tp")} value={p.tc} onChange={v => updateField(p.model, "tc", v)} /> : <span style={cellNumStyle(p.tc)}>{p.tc}</span>}</td>
+                        <td style={{ ...tdStyle, borderLeft: "2px solid #E4E7EC" }}>{isEditing && isAdmin ? <NumberCell id={cellId("tc")} nextId={cellId("tp")} value={p.tc} onChange={v => updateField(p.model, "tc", v)} /> : <span style={cellNumStyle(p.tc)}>{p.tc}</span>}</td>
                         <td style={tdStyle}>{transitForModel(p.model, "tc") > 0 ? <span style={{ fontFamily: "monospace", color: "#0D9488", fontWeight: 600 }}>+{transitForModel(p.model, "tc")}</span> : <span style={{ color: "#D1D5DB" }}>—</span>}</td>
-                        <td style={tdStyle}>{isEditing && isAdmin ? <NumberCell id={cellId("tp")} nextId={nextModel ? `inv-cell-kh-${nextModel}` : null} value={p.tp} onChange={v => updateField(p.model, "tp", v)} /> : <span style={cellNumStyle(p.tp)}>{p.tp}</span>}</td>
+                        <td style={{ ...tdStyle, borderLeft: "2px solid #E4E7EC" }}>{isEditing && isAdmin ? <NumberCell id={cellId("tp")} nextId={nextModel ? `inv-cell-kh-${nextModel}` : null} value={p.tp} onChange={v => updateField(p.model, "tp", v)} /> : <span style={cellNumStyle(p.tp)}>{p.tp}</span>}</td>
                         <td style={tdStyle}>{transitForModel(p.model, "tp") > 0 ? <span style={{ fontFamily: "monospace", color: "#0D9488", fontWeight: 600 }}>+{transitForModel(p.model, "tp")}</span> : <span style={{ color: "#D1D5DB" }}>—</span>}</td>
                       </>
                     ) : (
@@ -1048,11 +1072,12 @@ function AddProductModal({ onClose, onAdd, existingModels }) {
 // ============================================================
 // TRANSIT & UNASSIGNED PAGE
 // ============================================================
-function TransitPage({ containers, setContainers, transitItems, setTransitItems, poPending, setPoPending, unassigned, setUnassigned, isAdmin, productByModel }) {
+function TransitPage({ containers, setContainers, transitItems, setTransitItems, poPending, setPoPending, unassigned, setUnassigned, isAdmin, productByModel, onConfirmReceived }) {
   const [wh, setWh] = useState("kh");
   const [showAddTransit, setShowAddTransit] = useState(false);
   const [editingContainerId, setEditingContainerId] = useState(null);
   const [showAddUnassigned, setShowAddUnassigned] = useState(false);
+  const [confirmReceiveContainerId, setConfirmReceiveContainerId] = useState(null);
 
   const containersForWh = containers.filter(c => c.warehouse === wh);
   const poForWh = poPending.filter(p => p.warehouse === wh);
@@ -1060,11 +1085,19 @@ function TransitPage({ containers, setContainers, transitItems, setTransitItems,
   const deletePo = (id) => setPoPending(prev => prev.filter(p => p.id !== id));
   const deleteUnassigned = (id) => setUnassigned(prev => prev.filter(u => u.id !== id));
 
-  const deductUnassigned = (id, amount) => {
-    setUnassigned(prev => prev
-      .map(u => u.id === id ? { ...u, qty: Math.max(0, u.qty - amount) } : u)
-      .filter(u => u.qty > 0)
-    );
+  const deductUnassigned = (id, amount, recreateInfo) => {
+    setUnassigned(prev => {
+      const exists = prev.some(u => u.id === id);
+      if (!exists && amount < 0 && recreateInfo) {
+        // The record was fully consumed earlier and removed; since we're
+        // giving quantity back (negative amount) and it no longer exists,
+        // recreate it so the returned quantity isn't silently lost.
+        return [...prev, { id, model: recreateInfo.model, supplier: recreateInfo.supplier, qty: -amount, note: recreateInfo.note || "" }];
+      }
+      return prev
+        .map(u => u.id === id ? { ...u, qty: Math.max(0, u.qty - amount) } : u)
+        .filter(u => u.qty > 0);
+    });
   };
 
   // Deleting an entire container: restore any unassigned-stock deductions
@@ -1121,10 +1154,11 @@ function TransitPage({ containers, setContainers, transitItems, setTransitItems,
         {grouped.length === 0 ? (
           <div style={{ background: "#fff", border: "1px solid #E4E7EC", borderRadius: 12, padding: "28px 16px", textAlign: "center", color: "#9CA3AF", fontSize: 12 }}>此倉庫目前沒有在途貨記錄</div>
         ) : (
-          grouped.map(({ container, items }) => {
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 12 }}>
+          {grouped.map(({ container, items }) => {
             const groupQty = items.reduce((a, t) => a + t.qty, 0);
             return (
-              <div key={container.id} style={{ background: "#fff", border: "1px solid #E4E7EC", borderRadius: 12, overflow: "hidden", marginBottom: 12 }}>
+              <div key={container.id} style={{ background: "#fff", border: "1px solid #E4E7EC", borderRadius: 12, overflow: "hidden" }}>
                 {/* Row 1: container number (or a "not yet filled" prompt) */}
                 <div style={{ padding: "10px 16px 4px", background: "#F0FDFA" }}>
                   <div style={{ fontSize: 12.5, fontWeight: 700, color: container.container ? "#0D9488" : "#D97706" }}>
@@ -1141,16 +1175,23 @@ function TransitPage({ containers, setContainers, transitItems, setTransitItems,
                   <span style={{ fontSize: 11.5, color: "#374151", fontFamily: "monospace" }}>預計到港日：<b>{container.eta}</b></span>
                   {isAdmin && (
                     <span style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+                      <PrimaryButton onClick={() => setConfirmReceiveContainerId(container.id)}>✓ 確認入庫</PrimaryButton>
                       <IconButton onClick={() => setEditingContainerId(container.id)}>編輯</IconButton>
                       <IconButton danger onClick={() => deleteContainer(container.id)}>刪除整櫃</IconButton>
                     </span>
                   )}
                 </div>
+                {/* Row 2.5: accessories note, only shown when present */}
+                {container.accessories && (
+                  <div style={{ padding: "6px 16px", background: "#FEF9EC", borderTop: "1px solid #FDE9C8" }}>
+                    <span style={{ fontSize: 11.5, color: "#92400E" }}>📦 附帶零件：<b>{container.accessories}</b>（不計入庫存）</span>
+                  </div>
+                )}
                 {/* Row 3+: per-model detail */}
                 <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead><tr style={{ background: "#F7F8FA" }}>
-                    <th style={thStyle}>型號</th><th style={thStyle}>數量</th>
+                    <th style={thStyle}>型號</th><th style={{ ...thStyle, textAlign: "right", width: 80 }}>數量</th>
                   </tr></thead>
                   <tbody>
                     {items.map(t => (
@@ -1163,7 +1204,7 @@ function TransitPage({ containers, setContainers, transitItems, setTransitItems,
                             </span>
                           )}
                         </td>
-                        <td style={{ ...tdStyle, fontFamily: "monospace", color: "#0D9488", fontWeight: 700 }}>+{t.qty}</td>
+                        <td style={{ ...tdStyle, fontFamily: "monospace", color: "#0D9488", fontWeight: 700, textAlign: "right" }}>+{t.qty}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1171,7 +1212,8 @@ function TransitPage({ containers, setContainers, transitItems, setTransitItems,
                 </div>
               </div>
             );
-          })
+          })}
+          </div>
         )}
       </div>
 
@@ -1217,7 +1259,7 @@ function TransitPage({ containers, setContainers, transitItems, setTransitItems,
           <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead><tr style={{ background: "#F7F8FA" }}>
-              <th style={thStyle}>型號</th><th style={thStyle}>供應商</th><th style={thStyle}>數量</th><th style={thStyle}>備註</th>
+              <th style={thStyle}>型號</th><th style={thStyle}>供應商</th><th style={{ ...thStyle, textAlign: "right" }}>數量</th><th style={thStyle}>備註</th>
               {isAdmin && <th style={thStyle}>操作</th>}
             </tr></thead>
             <tbody>
@@ -1225,7 +1267,7 @@ function TransitPage({ containers, setContainers, transitItems, setTransitItems,
                 <tr key={u.id}>
                   <td style={{ ...tdStyle, fontWeight: 700 }}>{u.model}</td>
                   <td style={tdStyle}>{u.supplier}</td>
-                  <td style={{ ...tdStyle, fontFamily: "monospace", color: "#7C3AED", fontWeight: 700 }}>{u.qty}</td>
+                  <td style={{ ...tdStyle, fontFamily: "monospace", color: "#7C3AED", fontWeight: 700, textAlign: "right" }}>{u.qty}</td>
                   <td style={{ ...tdStyle, color: "#9CA3AF", fontSize: 11.5 }}>{u.note}</td>
                   {isAdmin && <td style={tdStyle}><IconButton danger onClick={() => deleteUnassigned(u.id)}>刪除</IconButton></td>}
                 </tr>
@@ -1276,6 +1318,27 @@ function TransitPage({ containers, setContainers, transitItems, setTransitItems,
           }}
         />
       )}
+      {confirmReceiveContainerId && (() => {
+        const receivingContainer = containers.find(c => c.id === confirmReceiveContainerId);
+        const receivingItems = transitItems.filter(t => t.containerId === confirmReceiveContainerId);
+        const receivingTotal = receivingItems.reduce((a, t) => a + t.qty, 0);
+        if (!receivingContainer) return null;
+        return (
+          <ConfirmModal
+            title="確認入庫"
+            message={
+              <>
+                確定要將「{receivingContainer.container || "此櫃"}」（{receivingContainer.supplier}）的全部 {receivingItems.length} 個品項、共 {receivingTotal} 台，加入 <b>{WH_LABELS[receivingContainer.warehouse]}</b> 的庫存嗎？
+                <br /><br />
+                確認後，這個櫃會從在途清單中移除，且無法復原，請先確認貨物已經實際到港、清關、入庫完成。
+              </>
+            }
+            confirmLabel="確認入庫"
+            onConfirm={() => { onConfirmReceived(confirmReceiveContainerId); setConfirmReceiveContainerId(null); }}
+            onCancel={() => setConfirmReceiveContainerId(null)}
+          />
+        );
+      })()}
     </div>
   );
 }
@@ -1285,6 +1348,7 @@ function AddTransitModal({ wh, onClose, onAddContainer, existingContainers, unas
   const [container, setContainer] = useState("");
   const [freeTime, setFreeTime] = useState("");
   const [eta, setEta] = useState("");
+  const [accessories, setAccessories] = useState("");
   const [items, setItems] = useState([{ model: "", qty: 0, deductFromId: "" }]);
 
   const addRow = () => setItems(prev => [...prev, { model: "", qty: 0, deductFromId: "" }]);
@@ -1303,13 +1367,13 @@ function AddTransitModal({ wh, onClose, onAddContainer, existingContainers, unas
     if (validItems.length === 0) return;
 
     const containerId = "CT-" + Date.now();
-    const containerRec = { id: containerId, warehouse: wh, supplier, container: container.trim(), freeTime: freeTime.trim(), eta };
+    const containerRec = { id: containerId, warehouse: wh, supplier, container: container.trim(), freeTime: freeTime.trim(), eta, accessories: accessories.trim() };
 
     const itemRecs = validItems.map((it, i) => {
       const finalQty = Number(it.qty) || 0;
       const deducted = it.deductFromId ? finalQty : 0;
       if (it.deductFromId) onDeductUnassigned(it.deductFromId, finalQty);
-      return { id: "IT-" + Date.now() + "-" + i, containerId, model: it.model.trim(), qty: finalQty, eta, deductedFromUnassigned: deducted };
+      return { id: "IT-" + Date.now() + "-" + i, containerId, model: it.model.trim(), qty: finalQty, eta, deductedFromUnassigned: deducted, deductedFromUnassignedId: it.deductFromId || null };
     });
 
     onAddContainer(containerRec, itemRecs);
@@ -1334,6 +1398,10 @@ function AddTransitModal({ wh, onClose, onAddContainer, existingContainers, unas
           <TextInput value={freeTime} onChange={e => setFreeTime(e.target.value)} placeholder="例如 10+10、7+3" />
         </Field>
       </FormGrid>
+
+      <Field label="附帶零件（選填，不計入庫存，純粹記錄用）">
+        <TextInput value={accessories} onChange={e => setAccessories(e.target.value)} placeholder="例如：電源線 5條、補修零件 x10" />
+      </Field>
 
       <div style={{ marginTop: 14, marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ fontSize: 12.5, fontWeight: 700 }}>此櫃內的型號</div>
@@ -1382,6 +1450,7 @@ function EditContainerModal({ container, items, existingContainers, unassigned, 
   const [containerNo, setContainerNo] = useState(container.container || "");
   const [freeTime, setFreeTime] = useState(container.freeTime || "");
   const [eta, setEta] = useState(container.eta);
+  const [accessories, setAccessories] = useState(container.accessories || "");
   // rows carry either an existing item's id (isNew: false) or are brand new (isNew: true)
   const [rows, setRows] = useState(items.map(it => ({ ...it, isNew: false, deductFromId: "" })));
 
@@ -1393,9 +1462,14 @@ function EditContainerModal({ container, items, existingContainers, unassigned, 
 
   const submit = () => {
     const validRows = rows.filter(r => r.model.trim());
-    const updatedContainer = { ...container, supplier, container: containerNo.trim(), freeTime: freeTime.trim(), eta };
+    const updatedContainer = { ...container, supplier, container: containerNo.trim(), freeTime: freeTime.trim(), eta, accessories: accessories.trim() };
 
     const removedItemIds = items.filter(orig => !validRows.find(r => r.id === orig.id)).map(orig => orig.id);
+    // If a removed row had a linked unassigned deduction, give that quantity back.
+    items.filter(orig => removedItemIds.includes(orig.id) && orig.deductedFromUnassignedId && orig.deductedFromUnassigned > 0)
+      .forEach(orig => onDeductUnassigned(orig.deductedFromUnassignedId, -orig.deductedFromUnassigned, {
+        model: orig.model, supplier: supplier, note: `刪除在途櫃內品項（原預計到港 ${orig.eta}）後退回`,
+      }));
 
     const updatedExistingItems = [];
     const newItemRecords = [];
@@ -1404,9 +1478,22 @@ function EditContainerModal({ container, items, existingContainers, unassigned, 
       if (r.isNew) {
         const deducted = r.deductFromId ? finalQty : 0;
         if (r.deductFromId) onDeductUnassigned(r.deductFromId, finalQty);
-        newItemRecords.push({ id: r.id, containerId: container.id, model: r.model.trim(), qty: finalQty, eta, deductedFromUnassigned: deducted });
+        newItemRecords.push({ id: r.id, containerId: container.id, model: r.model.trim(), qty: finalQty, eta, deductedFromUnassigned: deducted, deductedFromUnassignedId: r.deductFromId || null });
       } else {
-        updatedExistingItems.push({ id: r.id, containerId: container.id, model: r.model.trim(), qty: finalQty, eta, deductedFromUnassigned: r.deductedFromUnassigned || 0 });
+        // If this row was originally linked to an unassigned record, keep the
+        // unassigned pool in sync with any quantity change made here: a higher
+        // qty pulls the extra amount from unassigned, a lower qty gives the
+        // difference back. (This is the fix for quantity edits not updating
+        // the unassigned pool the way the initial creation did.)
+        if (r.deductedFromUnassignedId && r.deductedFromUnassigned > 0) {
+          const delta = finalQty - r.deductedFromUnassigned;
+          if (delta !== 0) onDeductUnassigned(r.deductedFromUnassignedId, delta, {
+            model: r.model, supplier: supplier, note: `調整在途櫃品項數量（原預計到港 ${eta}）後退回`,
+          });
+          updatedExistingItems.push({ id: r.id, containerId: container.id, model: r.model.trim(), qty: finalQty, eta, deductedFromUnassigned: finalQty, deductedFromUnassignedId: r.deductedFromUnassignedId });
+        } else {
+          updatedExistingItems.push({ id: r.id, containerId: container.id, model: r.model.trim(), qty: finalQty, eta, deductedFromUnassigned: r.deductedFromUnassigned || 0, deductedFromUnassignedId: r.deductedFromUnassignedId || null });
+        }
       }
     });
 
@@ -1430,6 +1517,10 @@ function EditContainerModal({ container, items, existingContainers, unassigned, 
           <TextInput value={freeTime} onChange={e => setFreeTime(e.target.value)} placeholder="例如 10+10、7+3" />
         </Field>
       </FormGrid>
+
+      <Field label="附帶零件（選填，不計入庫存，純粹記錄用）">
+        <TextInput value={accessories} onChange={e => setAccessories(e.target.value)} placeholder="例如：電源線 5條、補修零件 x10" />
+      </Field>
 
       <div style={{ marginTop: 14, marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ fontSize: 12.5, fontWeight: 700 }}>此櫃內的型號</div>
@@ -1490,7 +1581,7 @@ function AddUnassignedModal({ onClose, onAdd }) {
       <Field label="型號"><TextInput value={model} onChange={e => setModel(e.target.value)} autoFocus /></Field>
       <Field label="供應商"><Select value={supplier} onChange={e => setSupplier(e.target.value)}>{SUPPLIERS.map(s => <option key={s} value={s}>{s}</option>)}</Select></Field>
       <Field label="數量"><TextInput type="number" value={qty} onChange={e => setQty(e.target.value)} /></Field>
-      <Field label="備註"><TextInput value={note} onChange={e => setNote(e.target.value)} placeholder="例如：尚未決定送往哪個倉庫" /></Field>
+      <Field label="備註"><TextInput value={note} onChange={e => setNote(e.target.value)} placeholder="例如：2026/06 生產，尚未決定送往哪個倉庫" /></Field>
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
         <GhostButton onClick={onClose}>取消</GhostButton>
         <PrimaryButton onClick={submit}>新增</PrimaryButton>
