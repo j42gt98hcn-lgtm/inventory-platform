@@ -752,7 +752,8 @@ function InventoryPage({ products, setProducts, isAdmin, transitItems, container
   const [wh, setWh] = useState("all");
   const [category, setCategory] = useState("all");
   const [search, setSearch] = useState("");
-  const [editing, setEditing] = useState(null); // model being edited
+  const [editing, setEditing] = useState(null); // model being edited (single-row mode)
+  const [editAll, setEditAll] = useState(false); // true = every row editable at once
   const [showAddModal, setShowAddModal] = useState(false);
 
   const filtered = useMemo(() => {
@@ -794,6 +795,11 @@ function InventoryPage({ products, setProducts, isAdmin, transitItems, container
         <GhostButton active={wh === "tc"} onClick={() => setWh("tc")}>台中倉</GhostButton>
         <GhostButton active={wh === "tp"} onClick={() => setWh("tp")}>台北倉</GhostButton>
         <div style={{ flex: 1 }} />
+        {isAdmin && (
+          <GhostButton active={editAll} onClick={() => { setEditAll(v => !v); setEditing(null); }}>
+            {editAll ? "✓ 完成編輯" : "編輯全部"}
+          </GhostButton>
+        )}
         {isAdmin && <PrimaryButton onClick={() => setShowAddModal(true)}>＋ 新增型號</PrimaryButton>}
       </div>
 
@@ -846,25 +852,27 @@ function InventoryPage({ products, setProducts, isAdmin, transitItems, container
               </tr>
             </thead>
             <tbody>
-              {filtered.map(p => {
+              {filtered.map((p, idx) => {
                 const total = p.kh + p.tc + p.tp;
                 const isLow = p.safetyStock > 0 && total < p.safetyStock;
-                const isEditing = editing === p.model;
+                const isEditing = editAll || editing === p.model;
+                const nextModel = filtered[idx + 1] && filtered[idx + 1].model;
+                const cellId = (field) => `inv-cell-${field}-${p.model}`;
                 return (
                   <tr key={p.model}>
                     <td style={{ ...tdStyle, fontWeight: 700 }}>{p.model}</td>
                     {wh === "all" ? (
                       <>
-                        <td style={tdStyle}>{isEditing && isAdmin ? <NumberCell value={p.kh} onChange={v => updateField(p.model, "kh", v)} /> : <span style={cellNumStyle(p.kh)}>{p.kh}</span>}</td>
+                        <td style={tdStyle}>{isEditing && isAdmin ? <NumberCell id={cellId("kh")} nextId={cellId("tc")} value={p.kh} onChange={v => updateField(p.model, "kh", v)} /> : <span style={cellNumStyle(p.kh)}>{p.kh}</span>}</td>
                         <td style={tdStyle}>{transitForModel(p.model, "kh") > 0 ? <span style={{ fontFamily: "monospace", color: "#0D9488", fontWeight: 600 }}>+{transitForModel(p.model, "kh")}</span> : <span style={{ color: "#D1D5DB" }}>—</span>}</td>
-                        <td style={tdStyle}>{isEditing && isAdmin ? <NumberCell value={p.tc} onChange={v => updateField(p.model, "tc", v)} /> : <span style={cellNumStyle(p.tc)}>{p.tc}</span>}</td>
+                        <td style={tdStyle}>{isEditing && isAdmin ? <NumberCell id={cellId("tc")} nextId={cellId("tp")} value={p.tc} onChange={v => updateField(p.model, "tc", v)} /> : <span style={cellNumStyle(p.tc)}>{p.tc}</span>}</td>
                         <td style={tdStyle}>{transitForModel(p.model, "tc") > 0 ? <span style={{ fontFamily: "monospace", color: "#0D9488", fontWeight: 600 }}>+{transitForModel(p.model, "tc")}</span> : <span style={{ color: "#D1D5DB" }}>—</span>}</td>
-                        <td style={tdStyle}>{isEditing && isAdmin ? <NumberCell value={p.tp} onChange={v => updateField(p.model, "tp", v)} /> : <span style={cellNumStyle(p.tp)}>{p.tp}</span>}</td>
+                        <td style={tdStyle}>{isEditing && isAdmin ? <NumberCell id={cellId("tp")} nextId={nextModel ? `inv-cell-kh-${nextModel}` : null} value={p.tp} onChange={v => updateField(p.model, "tp", v)} /> : <span style={cellNumStyle(p.tp)}>{p.tp}</span>}</td>
                         <td style={tdStyle}>{transitForModel(p.model, "tp") > 0 ? <span style={{ fontFamily: "monospace", color: "#0D9488", fontWeight: 600 }}>+{transitForModel(p.model, "tp")}</span> : <span style={{ color: "#D1D5DB" }}>—</span>}</td>
                       </>
                     ) : (
                       <>
-                        <td style={tdStyle}>{isEditing && isAdmin ? <NumberCell value={p[wh]} onChange={v => updateField(p.model, wh, v)} /> : <span style={cellNumStyle(p[wh])}>{p[wh]}</span>}</td>
+                        <td style={tdStyle}>{isEditing && isAdmin ? <NumberCell id={cellId(wh)} nextId={nextModel ? `inv-cell-${wh}-${nextModel}` : null} value={p[wh]} onChange={v => updateField(p.model, wh, v)} /> : <span style={cellNumStyle(p[wh])}>{p[wh]}</span>}</td>
                         <td style={tdStyle}>{transitForModel(p.model, wh) > 0 ? <span style={{ fontFamily: "monospace", color: "#0D9488", fontWeight: 600 }}>+{transitForModel(p.model, wh)}</span> : <span style={{ color: "#D1D5DB" }}>—</span>}</td>
                       </>
                     )}
@@ -874,11 +882,11 @@ function InventoryPage({ products, setProducts, isAdmin, transitItems, container
                     {isAdmin && (
                       <td style={tdStyle}>
                         <div style={{ display: "flex", gap: 6 }}>
-                          {isEditing ? (
+                          {!editAll && (isEditing ? (
                             <IconButton onClick={() => setEditing(null)}>完成</IconButton>
                           ) : (
                             <IconButton onClick={() => setEditing(p.model)}>編輯</IconButton>
-                          )}
+                          ))}
                           <IconButton onClick={() => setRenameModalModel(p.model)}>改型號</IconButton>
                           <IconButton danger onClick={() => setConfirmDeleteModel(p.model)}>刪除</IconButton>
                         </div>
@@ -943,11 +951,19 @@ function RenameModal({ oldName, existingModels, affectedOrderItems, affectedTran
   );
 }
 
-function NumberCell({ value, onChange }) {
+function NumberCell({ value, onChange, id, nextId }) {
   return (
     <input
+      id={id}
       type="number" value={value}
       onChange={e => onChange(Number(e.target.value) || 0)}
+      onKeyDown={e => {
+        if (e.key !== "Enter") return;
+        e.preventDefault();
+        if (!nextId) return;
+        const next = document.getElementById(nextId);
+        if (next) { next.focus(); next.select(); }
+      }}
       style={{ width: 70, padding: "4px 6px", borderRadius: 5, border: "1px solid #2563EB", fontSize: 12.5, fontFamily: "monospace" }}
     />
   );
