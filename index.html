@@ -679,6 +679,13 @@ function InventoryPlatformInner() {
 function OverviewPage({ products, orders, transitItems, containers, unassigned, lowStockCount, khLow, tcLow, tpLow, transitTotalQty, activeOrdersCount, setPage }) {
   const { isMobile } = useViewport();
   const unassignedTotal = unassigned.reduce((a, u) => a + (u.qty || 0), 0);
+  const unassignedByModel = useMemo(() => {
+    const m = {};
+    unassigned.forEach(u => { m[u.model] = (m[u.model] || 0) + (u.qty || 0); });
+    return Object.entries(m)
+      .map(([model, qty]) => ({ model, qty }))
+      .sort((a, b) => b.qty - a.qty);
+  }, [unassigned]);
 
   // Orders that haven't reached 已入庫 (warehouse-received) yet — i.e. still open/in-flight.
   const openOrders = useMemo(() => orders.filter(o => o.status !== "已入庫"), [orders]);
@@ -741,13 +748,30 @@ function OverviewPage({ products, orders, transitItems, containers, unassigned, 
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ background: "#fff", border: "1px solid #E4E7EC", borderRadius: 12, overflow: "hidden" }}>
             <div style={{ padding: "12px 16px", borderBottom: "1px solid #E4E7EC", fontWeight: 700, fontSize: 13 }}>待分配庫存（已生產未分倉）</div>
-            <div style={{ padding: "16px" }}>
-              {unassigned.length === 0 ? (
-                <div style={{ textAlign: "center", color: "#9CA3AF", fontSize: 12, padding: "16px 0" }}>尚無資料，可至「在途與待分配」頁新增</div>
-              ) : (
-                <div style={{ fontSize: 22, fontWeight: 700, color: "#7C3AED" }}>{unassignedTotal.toLocaleString()} <span style={{ fontSize: 12, color: "#9CA3AF", fontWeight: 400 }}>台，共 {unassigned.length} 筆</span></div>
-              )}
-            </div>
+            {unassigned.length === 0 ? (
+              <div style={{ textAlign: "center", color: "#9CA3AF", fontSize: 12, padding: "16px 0" }}>尚無資料，可至「在途與待分配」頁新增</div>
+            ) : (
+              <>
+                <div style={{ padding: "16px 16px 8px" }}>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: "#7C3AED" }}>{unassignedTotal.toLocaleString()} <span style={{ fontSize: 12, color: "#9CA3AF", fontWeight: 400 }}>台，共 {unassigned.length} 筆</span></div>
+                </div>
+                <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead><tr style={{ background: "#F7F8FA" }}>
+                    <th style={thStyle}>型號</th><th style={{ ...thStyle, textAlign: "right", width: 80 }}>數量</th>
+                  </tr></thead>
+                  <tbody>
+                    {unassignedByModel.map(({ model, qty }) => (
+                      <tr key={model}>
+                        <td style={{ ...tdStyle, fontWeight: 700 }}>{model}</td>
+                        <td style={{ ...tdStyle, fontFamily: "monospace", color: "#7C3AED", fontWeight: 700, textAlign: "right" }}>{qty}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                </div>
+              </>
+            )}
           </div>
 
           <div style={{ background: "#fff", border: "1px solid #E4E7EC", borderRadius: 12, overflow: "hidden" }}>
