@@ -621,7 +621,7 @@ function InventoryPlatformInner() {
             <LoadingState />
           ) : page === "overview" ? (
             <OverviewPage
-              products={products} orders={orders} transitItems={transitItems} unassigned={unassigned}
+              products={products} orders={orders} transitItems={transitItems} containers={containers} unassigned={unassigned}
               lowStockCount={lowStockCount} khLow={khLow} tcLow={tcLow} tpLow={tpLow}
               transitTotalQty={transitTotalQty} activeOrdersCount={activeOrdersCount}
               setPage={setPage}
@@ -652,10 +652,22 @@ function InventoryPlatformInner() {
 // ============================================================
 // OVERVIEW PAGE
 // ============================================================
-function OverviewPage({ products, orders, transitItems, unassigned, lowStockCount, khLow, tcLow, tpLow, transitTotalQty, activeOrdersCount, setPage }) {
+function OverviewPage({ products, orders, transitItems, containers, unassigned, lowStockCount, khLow, tcLow, tpLow, transitTotalQty, activeOrdersCount, setPage }) {
   const { isMobile } = useViewport();
-  const sortedByKh = useMemo(() => [...products].sort((a, b) => a.kh - b.kh).slice(0, 8), [products]);
   const unassignedTotal = unassigned.reduce((a, u) => a + (u.qty || 0), 0);
+
+  // Orders that haven't reached 已入庫 (warehouse-received) yet — i.e. still open/in-flight.
+  const openOrders = useMemo(() => orders.filter(o => o.status !== "已入庫"), [orders]);
+
+  // Containers whose ETA falls within the next 21 days, soonest first.
+  const arrivingSoonContainers = useMemo(() => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const cutoff = new Date(today); cutoff.setDate(cutoff.getDate() + 21);
+    return containers
+      .filter(c => c.eta && /^\d{4}-\d{2}-\d{2}$/.test(c.eta))
+      .filter(c => { const d = new Date(c.eta); return d >= today && d <= cutoff; })
+      .sort((a, b) => new Date(a.eta) - new Date(b.eta));
+  }, [containers]);
 
   return (
     <div>
@@ -680,32 +692,26 @@ function OverviewPage({ products, orders, transitItems, unassigned, lowStockCoun
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.3fr 1fr", gap: 16 }}>
         <div style={{ background: "#fff", border: "1px solid #E4E7EC", borderRadius: 12, overflow: "hidden" }}>
           <div style={{ padding: "12px 16px", borderBottom: "1px solid #E4E7EC", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-            <div style={{ fontWeight: 700, fontSize: 13 }}>三倉庫存最低 8 項（依高雄倉排序）</div>
-            <span style={{ fontSize: 11.5, color: "#2563EB", cursor: "pointer", fontWeight: 500 }} onClick={() => setPage("inventory")}>查看全部 →</span>
+            <div style={{ fontWeight: 700, fontSize: 13 }}>即將到貨</div>
+            <span style={{ fontSize: 11.5, color: "#2563EB", cursor: "pointer", fontWeight: 500 }} onClick={() => setPage("transit")}>查看全部 →</span>
           </div>
+          {arrivingSoonContainers.length === 0 ? (
+            <div style={{ textAlign: "center", color: "#9CA3AF", fontSize: 12, padding: "16px 0" }}>未來三週內沒有預計到港的櫃子</div>
+          ) : (
           <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: "#F7F8FA" }}>
-                {["型號", "分類", "高雄", "台中", "台北", "安全水位"].map(h => (
-                  <th key={h} style={{ textAlign: "left", fontSize: 10.5, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", padding: "7px 14px", borderBottom: "1px solid #E4E7EC" }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
             <tbody>
-              {sortedByKh.map(p => (
-                <tr key={p.model}>
-                  <td style={{ padding: "7px 14px", fontWeight: 700, fontSize: 12.5, borderBottom: "1px solid #E4E7EC" }}>{p.model}</td>
-                  <td style={{ padding: "7px 14px", borderBottom: "1px solid #E4E7EC" }}><Badge color={catColor(p.category)} bg={catColor(p.category) + "1A"}>{p.category}</Badge></td>
-                  <td style={{ padding: "7px 14px", fontFamily: "monospace", fontSize: 12, borderBottom: "1px solid #E4E7EC", color: p.kh < 3 ? "#DC2626" : p.kh < 10 ? "#D97706" : "#15171C", fontWeight: p.kh < 10 ? 700 : 400 }}>{p.kh}</td>
-                  <td style={{ padding: "7px 14px", fontFamily: "monospace", fontSize: 12, borderBottom: "1px solid #E4E7EC" }}>{p.tc}</td>
-                  <td style={{ padding: "7px 14px", fontFamily: "monospace", fontSize: 12, borderBottom: "1px solid #E4E7EC" }}>{p.tp}</td>
-                  <td style={{ padding: "7px 14px", fontFamily: "monospace", fontSize: 12, borderBottom: "1px solid #E4E7EC", color: "#9CA3AF" }}>{p.safetyStock || "—"}</td>
+              {arrivingSoonContainers.map(c => (
+                <tr key={c.id}>
+                  <td style={{ padding: "8px 14px", fontSize: 12, fontWeight: 600, borderBottom: "1px solid #E4E7EC" }}>{c.container || "櫃號待補上"}</td>
+                  <td style={{ padding: "8px 14px", fontSize: 11.5, color: "#6B7280", borderBottom: "1px solid #E4E7EC" }}>{c.supplier}・{WH_LABELS[c.warehouse]}</td>
+                  <td style={{ padding: "8px 14px", fontFamily: "monospace", fontSize: 11.5, color: "#0D9488", fontWeight: 600, borderBottom: "1px solid #E4E7EC", textAlign: "right" }}>{c.eta}</td>
                 </tr>
               ))}
             </tbody>
           </table>
           </div>
+          )}
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -721,16 +727,25 @@ function OverviewPage({ products, orders, transitItems, unassigned, lowStockCoun
           </div>
 
           <div style={{ background: "#fff", border: "1px solid #E4E7EC", borderRadius: 12, overflow: "hidden" }}>
-            <div style={{ padding: "12px 16px", borderBottom: "1px solid #E4E7EC", fontWeight: 700, fontSize: 13 }}>最新訂單狀態</div>
+            <div style={{ padding: "12px 16px", borderBottom: "1px solid #E4E7EC", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+              <div style={{ fontWeight: 700, fontSize: 13 }}>最新訂單狀態</div>
+              <span style={{ fontSize: 11.5, color: "#2563EB", cursor: "pointer", fontWeight: 500 }} onClick={() => setPage("orders")}>查看全部 →</span>
+            </div>
+            {openOrders.length === 0 ? (
+              <div style={{ textAlign: "center", color: "#9CA3AF", fontSize: 12, padding: "16px 0" }}>目前沒有尚未結案的訂單</div>
+            ) : (
             <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <tbody>
-                {orders.slice(0, 6).map(o => {
+                {openOrders.slice(0, 6).map(o => {
                   const sc = STATUS_COLORS[o.status] || { c: "#6B7280", bg: "#F7F8FA" };
+                  const itemSummary = o.items.length > 0
+                    ? o.items.map(it => it.model).join("、")
+                    : "無品項明細";
                   return (
                     <tr key={o.id}>
-                      <td style={{ padding: "8px 14px", fontFamily: "monospace", fontSize: 11.5, color: "#2563EB", fontWeight: 600, borderBottom: "1px solid #E4E7EC" }}>{o.id}</td>
-                      <td style={{ padding: "8px 14px", fontSize: 12, borderBottom: "1px solid #E4E7EC" }}>{o.supplier}</td>
+                      <td style={{ padding: "8px 14px", fontSize: 12, fontWeight: 600, borderBottom: "1px solid #E4E7EC" }}>{o.supplier}</td>
+                      <td style={{ padding: "8px 14px", fontSize: 11.5, color: "#6B7280", borderBottom: "1px solid #E4E7EC", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{itemSummary}</td>
                       <td style={{ padding: "8px 14px", borderBottom: "1px solid #E4E7EC", textAlign: "right" }}><Badge color={sc.c} bg={sc.bg}>{o.status}</Badge></td>
                     </tr>
                   );
@@ -738,7 +753,9 @@ function OverviewPage({ products, orders, transitItems, unassigned, lowStockCoun
               </tbody>
             </table>
             </div>
+            )}
           </div>
+
         </div>
       </div>
     </div>
