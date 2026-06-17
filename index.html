@@ -952,14 +952,28 @@ function RenameModal({ oldName, existingModels, affectedOrderItems, affectedTran
 }
 
 function NumberCell({ value, onChange, id, nextId }) {
+  const [text, setText] = useState(String(value));
+
+  // Keep local text in sync if the outer value changes from elsewhere
+  // (e.g. another tab/device wrote new data), but only when this field
+  // isn't actively being typed into.
+  useEffect(() => { setText(String(value)); }, [value]);
+
+  const commit = () => {
+    const n = Number(text);
+    onChange(Number.isFinite(n) ? n : 0);
+  };
+
   return (
     <input
       id={id}
-      type="number" value={value}
-      onChange={e => onChange(Number(e.target.value) || 0)}
+      type="number" value={text}
+      onChange={e => setText(e.target.value)}
+      onBlur={commit}
       onKeyDown={e => {
         if (e.key !== "Enter") return;
         e.preventDefault();
+        commit();
         if (!nextId) return;
         const next = document.getElementById(nextId);
         if (next) { next.focus(); next.select(); }
