@@ -16,6 +16,2037 @@
 </head>
 <body>
   <div id="root"></div>
-  <script type="text/babel" data-presets="react" src="InventoryPlatform.jsx"></script>
+  <script type="text/babel" data-presets="react">
+// React and its hooks are loaded globally via CDN <script> tags in index.html,
+// and destructured into local names right before this component code runs.
+const { useState, useEffect, useMemo, useCallback } = React;
+
+// ============================================================
+// SEED DATA
+// ============================================================
+const SEED_PRODUCTS = [{"model": "BD-106INV", "category": "冰櫃", "kh": 277, "tc": 151, "tp": 80, "safetyStock": 75, "supplier": ""}, {"model": "BD-146INV", "category": "冰櫃", "kh": 375, "tc": 149, "tp": 83, "safetyStock": 90, "supplier": ""}, {"model": "BD-206INV", "category": "冰櫃", "kh": 384, "tc": 221, "tp": 130, "safetyStock": 110, "supplier": ""}, {"model": "BD-266INV", "category": "冰櫃", "kh": 271, "tc": 77, "tp": 63, "safetyStock": 60, "supplier": ""}, {"model": "BD-309INV", "category": "冰櫃", "kh": 38, "tc": 38, "tp": 56, "safetyStock": 20, "supplier": ""}, {"model": "BD-409INV", "category": "冰櫃", "kh": 86, "tc": 43, "tp": 97, "safetyStock": 35, "supplier": ""}, {"model": "BD-509INV", "category": "冰櫃", "kh": 21, "tc": 24, "tp": 23, "safetyStock": 10, "supplier": ""}, {"model": "BD-609INV", "category": "冰櫃", "kh": 97, "tc": 98, "tp": 64, "safetyStock": 40, "supplier": ""}, {"model": "SD-100", "category": "玻璃對拉冰櫃", "kh": 95, "tc": 60, "tp": 61, "safetyStock": 30, "supplier": ""}, {"model": "SD-200", "category": "玻璃對拉冰櫃", "kh": 38, "tc": 44, "tp": 44, "safetyStock": 20, "supplier": ""}, {"model": "SD-309", "category": "玻璃對拉冰櫃", "kh": 48, "tc": 65, "tp": 65, "safetyStock": 25, "supplier": ""}, {"model": "SD-409", "category": "玻璃對拉冰櫃", "kh": 150, "tc": 75, "tp": 77, "safetyStock": 45, "supplier": ""}, {"model": "SD-609", "category": "玻璃對拉冰櫃", "kh": 44, "tc": 44, "tp": 37, "safetyStock": 20, "supplier": ""}, {"model": "SD-420P", "category": "玻璃對拉冰櫃", "kh": 12, "tc": 0, "tp": 2, "safetyStock": 5, "supplier": ""}, {"model": "SD-620P", "category": "玻璃對拉冰櫃", "kh": 7, "tc": 18, "tp": 0, "safetyStock": 5, "supplier": ""}, {"model": "SD-420Q斜背", "category": "玻璃對拉冰櫃", "kh": 19, "tc": 10, "tp": 13, "safetyStock": 5, "supplier": ""}, {"model": "SD-435", "category": "玻璃對拉冰櫃", "kh": 26, "tc": 12, "tp": 13, "safetyStock": 10, "supplier": ""}, {"model": "SD-665", "category": "玻璃對拉冰櫃", "kh": 8, "tc": 10, "tp": 11, "safetyStock": 5, "supplier": ""}, {"model": "MF-506", "category": "冰櫃", "kh": 51, "tc": 24, "tp": 30, "safetyStock": 15, "supplier": ""}, {"model": "MF-606", "category": "冰櫃", "kh": 39, "tc": 84, "tp": 42, "safetyStock": 25, "supplier": ""}, {"model": "MF-B3891C", "category": "直立式冷凍櫃", "kh": 21, "tc": 3, "tp": 5, "safetyStock": 5, "supplier": ""}, {"model": "KC-600INV", "category": "直立式冷凍櫃", "kh": 67, "tc": 6, "tp": 6, "safetyStock": 10, "supplier": ""}, {"model": "ULT-180INV", "category": "超低溫冰櫃", "kh": 12, "tc": 0, "tp": 2, "safetyStock": 5, "supplier": ""}, {"model": "ULT-280INV", "category": "超低溫冰櫃", "kh": 16, "tc": 1, "tp": 7, "safetyStock": 5, "supplier": ""}, {"model": "ULT-380INV", "category": "超低溫冰櫃", "kh": 12, "tc": 3, "tp": 4, "safetyStock": 5, "supplier": ""}, {"model": "ULT-500INV", "category": "超低溫冰櫃", "kh": 9, "tc": 4, "tp": 5, "safetyStock": 5, "supplier": ""}, {"model": "VT-146", "category": "超低溫冰櫃", "kh": 2, "tc": 2, "tp": 2, "safetyStock": 5, "supplier": ""}, {"model": "VT-75/INV", "category": "超低溫冰櫃", "kh": 9, "tc": 0, "tp": 3, "safetyStock": 5, "supplier": ""}, {"model": "VT-147/INV", "category": "超低溫冰櫃", "kh": 7, "tc": 2, "tp": 2, "safetyStock": 5, "supplier": ""}, {"model": "VT-207INV", "category": "超低溫冰櫃", "kh": 19, "tc": 0, "tp": 0, "safetyStock": 5, "supplier": ""}, {"model": "VT-307/INV", "category": "超低溫冰櫃", "kh": 30, "tc": 6, "tp": 8, "safetyStock": 5, "supplier": ""}, {"model": "VT-407/INV", "category": "超低溫冰櫃", "kh": 13, "tc": 0, "tp": 1, "safetyStock": 5, "supplier": ""}, {"model": "60W158臥式", "category": "超低溫冰櫃", "kh": 10, "tc": 0, "tp": 2, "safetyStock": 5, "supplier": ""}, {"model": "60W208", "category": "超低溫冰櫃", "kh": 24, "tc": 1, "tp": 1, "safetyStock": 5, "supplier": ""}, {"model": "BD86", "category": "直立式冷凍櫃", "kh": 8, "tc": 0, "tp": 3, "safetyStock": 5, "supplier": ""}, {"model": "BD-146密凍", "category": "直立式冷凍櫃", "kh": 12, "tc": 0, "tp": 3, "safetyStock": 5, "supplier": ""}, {"model": "SC-105玻藏", "category": "玻璃展示櫃", "kh": 65, "tc": 93, "tp": 87, "safetyStock": 35, "supplier": ""}, {"model": "SC-115玻藏", "category": "玻璃展示櫃", "kh": 79, "tc": 60, "tp": 60, "safetyStock": 30, "supplier": ""}, {"model": "SC-349玻藏", "category": "玻璃展示櫃", "kh": 76, "tc": 0, "tp": 1, "safetyStock": 10, "supplier": ""}, {"model": "SC-399玻藏", "category": "玻璃展示櫃", "kh": 72, "tc": 0, "tp": 0, "safetyStock": 10, "supplier": ""}, {"model": "SC-386玻藏", "category": "玻璃展示櫃", "kh": 3, "tc": 48, "tp": 0, "safetyStock": 10, "supplier": ""}, {"model": "SD-102玻凍", "category": "直立式冷凍櫃", "kh": 15, "tc": 3, "tp": 1, "safetyStock": 5, "supplier": ""}, {"model": "SC-168", "category": "玻璃展示櫃", "kh": 1, "tc": 2, "tp": 11, "safetyStock": 5, "supplier": ""}, {"model": "SC-238", "category": "玻璃展示櫃", "kh": 5, "tc": 0, "tp": 5, "safetyStock": 5, "supplier": ""}, {"model": "SC-258", "category": "玻璃展示櫃", "kh": 60, "tc": 22, "tp": 37, "safetyStock": 20, "supplier": ""}, {"model": "SC-358", "category": "玻璃展示櫃", "kh": 68, "tc": 38, "tp": 59, "safetyStock": 25, "supplier": ""}, {"model": "LG-208SC滑", "category": "玻璃展示櫃", "kh": 4, "tc": 0, "tp": 13, "safetyStock": 5, "supplier": ""}, {"model": "P688WB滑", "category": "玻璃展示櫃", "kh": 10, "tc": 0, "tp": 7, "safetyStock": 5, "supplier": ""}, {"model": "RT-58", "category": "蛋糕櫃", "kh": 58, "tc": 28, "tp": 38, "safetyStock": 20, "supplier": ""}, {"model": "RT-78", "category": "蛋糕櫃", "kh": 28, "tc": 16, "tp": 9, "safetyStock": 10, "supplier": ""}, {"model": "RT-58BL", "category": "蛋糕櫃", "kh": 16, "tc": 5, "tp": 9, "safetyStock": 5, "supplier": ""}, {"model": "RT-78BL", "category": "蛋糕櫃", "kh": 12, "tc": 5, "tp": 14, "safetyStock": 5, "supplier": ""}, {"model": "RT-215", "category": "蛋糕櫃", "kh": 0, "tc": 7, "tp": 4, "safetyStock": 5, "supplier": ""}, {"model": "RTW-105", "category": "蛋糕櫃", "kh": 23, "tc": 33, "tp": 11, "safetyStock": 10, "supplier": ""}, {"model": "RTW-120", "category": "蛋糕櫃", "kh": 4, "tc": 10, "tp": 4, "safetyStock": 5, "supplier": ""}, {"model": "RTW-160", "category": "蛋糕櫃", "kh": 6, "tc": 10, "tp": 5, "safetyStock": 5, "supplier": ""}, {"model": "RTW-120直角", "category": "蛋糕櫃", "kh": 0, "tc": 0, "tp": 2, "safetyStock": 5, "supplier": ""}, {"model": "RTW-160直角", "category": "蛋糕櫃", "kh": 0, "tc": 0, "tp": 2, "safetyStock": 5, "supplier": ""}, {"model": "RT-1200", "category": "蛋糕櫃", "kh": 2, "tc": 10, "tp": 4, "safetyStock": 5, "supplier": ""}, {"model": "ARC-270Z", "category": "蛋糕櫃", "kh": 1, "tc": 0, "tp": 1, "safetyStock": 5, "supplier": ""}, {"model": "ARC-370Z", "category": "蛋糕櫃", "kh": 1, "tc": 0, "tp": 1, "safetyStock": 5, "supplier": ""}, {"model": "VKG-581", "category": "酒櫃", "kh": 117, "tc": 36, "tp": 35, "safetyStock": 30, "supplier": ""}, {"model": "W-185/110V", "category": "酒櫃", "kh": 20, "tc": 6, "tp": 5, "safetyStock": 5, "supplier": ""}, {"model": "JC-58A", "category": "酒櫃", "kh": 9, "tc": 1, "tp": 2, "safetyStock": 5, "supplier": ""}, {"model": "JC-85A", "category": "酒櫃", "kh": 5, "tc": 2, "tp": 2, "safetyStock": 5, "supplier": ""}, {"model": "JC-145A", "category": "酒櫃", "kh": 11, "tc": 2, "tp": 3, "safetyStock": 5, "supplier": ""}, {"model": "JC-265A", "category": "酒櫃", "kh": 8, "tc": 2, "tp": 4, "safetyStock": 5, "supplier": ""}, {"model": "JC-375A", "category": "酒櫃", "kh": 6, "tc": 2, "tp": 3, "safetyStock": 5, "supplier": ""}, {"model": "JC-425A", "category": "酒櫃", "kh": 6, "tc": 3, "tp": 3, "safetyStock": 5, "supplier": ""}, {"model": "WSF120L桌上", "category": "蛋糕櫃", "kh": 1, "tc": 0, "tp": 0, "safetyStock": 5, "supplier": ""}, {"model": "WDF097F落地", "category": "蛋糕櫃", "kh": 0, "tc": 4, "tp": 0, "safetyStock": 5, "supplier": ""}, {"model": "WDF127F", "category": "蛋糕櫃", "kh": 0, "tc": 1, "tp": 0, "safetyStock": 5, "supplier": ""}, {"model": "WDF157F", "category": "蛋糕櫃", "kh": 2, "tc": 5, "tp": 0, "safetyStock": 5, "supplier": ""}, {"model": "WDF177F", "category": "蛋糕櫃", "kh": 1, "tc": 1, "tp": 0, "safetyStock": 5, "supplier": ""}, {"model": "TT-300", "category": "餐飲設備", "kh": 8, "tc": 6, "tp": 4, "safetyStock": 5, "supplier": ""}, {"model": "8L/110V", "category": "餐飲設備", "kh": 169, "tc": 64, "tp": 88, "safetyStock": 50, "supplier": ""}, {"model": "8L/220V", "category": "餐飲設備", "kh": 283, "tc": 95, "tp": 102, "safetyStock": 70, "supplier": ""}, {"model": "11L", "category": "餐飲設備", "kh": 12, "tc": 17, "tp": 0, "safetyStock": 5, "supplier": ""}, {"model": "16L", "category": "餐飲設備", "kh": 7, "tc": 1, "tp": 6, "safetyStock": 5, "supplier": ""}, {"model": "DH-1P3", "category": "餐飲設備", "kh": 6, "tc": 4, "tp": 6, "safetyStock": 5, "supplier": ""}, {"model": "DH-1P5", "category": "餐飲設備", "kh": 12, "tc": 9, "tp": 13, "safetyStock": 5, "supplier": ""}, {"model": "DH-2P", "category": "餐飲設備", "kh": 18, "tc": 17, "tp": 20, "safetyStock": 10, "supplier": ""}, {"model": "DH-3P", "category": "餐飲設備", "kh": 5, "tc": 1, "tp": 4, "safetyStock": 5, "supplier": ""}, {"model": "DH-4P", "category": "餐飲設備", "kh": 3, "tc": 2, "tp": 1, "safetyStock": 5, "supplier": ""}, {"model": "R60-2", "category": "餐飲設備", "kh": 13, "tc": 1, "tp": 8, "safetyStock": 5, "supplier": ""}, {"model": "R60-1", "category": "餐飲設備", "kh": 22, "tc": 5, "tp": 14, "safetyStock": 5, "supplier": ""}, {"model": "R60-3", "category": "餐飲設備", "kh": 2, "tc": 3, "tp": 2, "safetyStock": 5, "supplier": ""}, {"model": "4A旋風烤箱", "category": "餐飲設備", "kh": 18, "tc": 4, "tp": 5, "safetyStock": 5, "supplier": ""}, {"model": "MT-20", "category": "餐飲設備", "kh": 16, "tc": 7, "tp": 0, "safetyStock": 5, "supplier": ""}, {"model": "SHG-360CW", "category": "玻璃展示櫃", "kh": 3, "tc": 25, "tp": 0, "safetyStock": 5, "supplier": ""}, {"model": "SHG-360CB", "category": "玻璃展示櫃", "kh": 15, "tc": 11, "tp": 21, "safetyStock": 5, "supplier": ""}, {"model": "SHG-460CB", "category": "玻璃展示櫃", "kh": 3, "tc": 0, "tp": 3, "safetyStock": 5, "supplier": ""}, {"model": "SHG-210C", "category": "玻璃展示櫃", "kh": 4, "tc": 3, "tp": 1, "safetyStock": 5, "supplier": ""}, {"model": "SHG-210CIB", "category": "玻璃展示櫃", "kh": 1, "tc": 2, "tp": 0, "safetyStock": 5, "supplier": ""}, {"model": "SHG-310C", "category": "玻璃展示櫃", "kh": 0, "tc": 0, "tp": 1, "safetyStock": 5, "supplier": ""}, {"model": "SHG-310CIB", "category": "玻璃展示櫃", "kh": 1, "tc": 0, "tp": 0, "safetyStock": 5, "supplier": ""}];
+
+const SEED_ORDERS = [{"id": "PO-2026-041", "totalAmount": null, "supplier": "澳柯瑪", "year": 2026, "orderDate": "2026-06-01", "currency": "USD", "status": "生產中", "shipMode": "分批出貨", "items": [{"model": "BD-106INV", "qty": 238, "eta": "2026-06-15"}, {"model": "BD-146INV", "qty": 188, "eta": "2026-06-15"}, {"model": "BD-206INV", "qty": 432, "eta": "2026-06-15"}, {"model": "BD-266INV", "qty": 180, "eta": "2026-06-15"}, {"model": "BD-309INV", "qty": 90, "eta": "2026-06-30"}, {"model": "BD-409INV", "qty": 225, "eta": "2026-06-30"}, {"model": "BD-509INV", "qty": 58, "eta": "2026-06-30"}, {"model": "BD-609INV", "qty": 300, "eta": "2026-06-30"}], "note": "BD系列"}, {"id": "20260415001", "totalAmount": null, "supplier": "澳柯瑪", "year": 2026, "orderDate": "2026-04-15", "currency": "USD", "status": "生產中", "shipMode": "分批出貨", "items": [{"model": "SC-349", "qty": 112, "eta": "2026-06-15"}, {"model": "SC-399", "qty": 180, "eta": "2026-06-15"}], "note": ""}, {"id": "20260518001", "totalAmount": null, "supplier": "澳柯瑪", "year": 2026, "orderDate": "2026-05-18", "currency": "USD", "status": "生產中", "shipMode": "分批出貨", "items": [{"model": "BD-206INV", "qty": 576, "eta": "2026-08-15"}, {"model": "BD-266INV", "qty": 120, "eta": "2026-08-15"}, {"model": "BD-409INV", "qty": 450, "eta": "2026-08-15"}, {"model": "BD-509INV", "qty": 58, "eta": "2026-08-15"}, {"model": "BD-609INV", "qty": 400, "eta": "2026-08-15"}], "note": "8月中生產"}, {"id": "BH260119001", "totalAmount": 65880, "supplier": "冰泓", "year": 2026, "orderDate": "2026-01-19", "currency": "USD", "status": "生產中", "shipMode": "分批出貨", "items": [{"model": "MF-506", "qty": 60, "eta": "2026-04-30"}, {"model": "MF-606", "qty": 200, "eta": "2026-04-30"}], "note": "待安排出貨"}, {"id": "BH260311001", "totalAmount": null, "supplier": "冰泓", "year": 2026, "orderDate": "2026-03-11", "currency": "USD", "status": "生產中", "shipMode": "分批出貨", "items": [{"model": "MF-506", "qty": 60, "eta": "2026-04-30"}, {"model": "MF-606", "qty": 200, "eta": "2026-04-30"}], "note": ""}, {"id": "473341", "destinationWarehouse": null, "totalAmount": 17340, "supplier": "VESTFROST", "year": 2026, "orderDate": "2026-06-11", "currency": "USD", "status": "已入庫", "shipMode": "整批出貨", "items": [{"model": "VT-75INV", "qty": 10, "eta": null}, {"model": "VT-207INV", "qty": 10, "eta": null}, {"model": "VT-307INV", "qty": 20, "eta": null}, {"model": "VT-407INV", "qty": 16, "eta": null}, {"model": "VT-407", "qty": 40, "eta": null}], "note": "高雄/台中"}, {"id": "476730", "destinationWarehouse": "tp", "totalAmount": 14908.39, "supplier": "VESTFROST", "year": 2026, "orderDate": "2026-08-14", "currency": "USD", "status": "待出貨", "shipMode": "整批出貨", "items": [], "note": "基隆港，預計10月，無品項明細"}, {"id": "476731", "destinationWarehouse": "kh", "totalAmount": 35229.6, "supplier": "VESTFROST", "year": 2026, "orderDate": "2026-08-14", "currency": "USD", "status": "待出貨", "shipMode": "整批出貨", "items": [], "note": "高雄港，預計10月，無品項明細"}, {"id": "476732", "destinationWarehouse": "kh", "totalAmount": 983.6, "supplier": "VESTFROST", "year": 2026, "orderDate": "2026-08-14", "currency": "USD", "status": "待出貨", "shipMode": "整批出貨", "items": [], "note": "高雄港，預計10月，無品項明細"}, {"id": "476733", "destinationWarehouse": "kh", "totalAmount": 37230, "supplier": "VESTFROST", "year": 2026, "orderDate": "2026-08-14", "currency": "USD", "status": "待出貨", "shipMode": "整批出貨", "items": [], "note": "高雄港，預計10月，無品項明細"}, {"id": "476988", "destinationWarehouse": "kh", "totalAmount": 16416, "supplier": "VESTFROST", "year": 2026, "orderDate": "2026-08-14", "currency": "USD", "status": "待出貨", "shipMode": "整批出貨", "items": [], "note": "高雄港，預計10月，無品項明細"}, {"id": "APS5XH-26-03", "destinationWarehouse": null, "totalAmount": 31782, "supplier": "三勝", "year": 2026, "orderDate": "2026-06-18", "currency": "EUR", "status": "已入庫", "shipMode": "整批出貨", "items": [{"model": "SC-258", "qty": 26, "eta": null}, {"model": "SC-358", "qty": 32, "eta": null}], "note": "高雄和基隆"}, {"id": "APS5XR-26-01", "destinationWarehouse": "tc", "totalAmount": 18656, "supplier": "三勝", "year": 2026, "orderDate": "2026-06-18", "currency": "EUR", "status": "待出貨", "shipMode": "整批出貨", "items": [], "note": "台中港，無品項明細"}, {"id": "（無編號）-奧馬", "destinationWarehouse": "kh", "totalAmount": 11895, "supplier": "奧馬", "year": 2026, "orderDate": "2026-05-15", "currency": "USD", "status": "已入庫", "shipMode": "整批出貨", "items": [{"model": "KC-600INV", "qty": 39, "eta": "2026-05-15"}], "note": "高雄到貨"}, {"id": "（無編號）-捷盛", "destinationWarehouse": "kh", "totalAmount": 2300, "supplier": "捷盛", "year": 2026, "orderDate": null, "currency": "USD", "status": "待出貨", "shipMode": "整批出貨", "items": [], "note": "上海，CIF高雄，無品項明細"}, {"id": "（待補PO）-勞特", "destinationWarehouse": null, "totalAmount": null, "supplier": "勞特", "year": 2026, "orderDate": null, "currency": "USD", "status": "已入庫", "shipMode": "整批出貨", "items": [{"model": "RT-58", "qty": 56, "eta": null}, {"model": "RT-215L", "qty": 14, "eta": null}, {"model": "RTW-120", "qty": 18, "eta": null}, {"model": "RTW-160", "qty": 20, "eta": null}, {"model": "RT-1200", "qty": 23, "eta": null}], "note": "高雄+台中"}];
+
+const SEED_CONTAINERS = [{"id": "CT-001", "warehouse": "kh", "supplier": "澳柯瑪", "container": "6/10 日照大船（高雄）", "freeTime": "", "eta": "2026-06-19"}, {"id": "CT-002", "warehouse": "kh", "supplier": "澳柯瑪", "container": "6/18 日照大船-長榮（高雄，第1批）", "freeTime": "", "eta": "2026-06-23"}, {"id": "CT-003", "warehouse": "kh", "supplier": "冰泓", "container": "冰泓 6/25 預計到港", "freeTime": "", "eta": "2026-06-25"}, {"id": "CT-004", "warehouse": "kh", "supplier": "澳柯瑪", "container": "6/23 日照大船-萬海（高雄）", "freeTime": "", "eta": "2026-06-27"}, {"id": "CT-005", "warehouse": "kh", "supplier": "澳柯瑪", "container": "6/21 日照大船-陽明（高雄，第2批）", "freeTime": "", "eta": "2026-07-03"}, {"id": "CT-006", "warehouse": "kh", "supplier": "澳柯瑪", "container": "7/5 日照大船-陽明（高雄）", "freeTime": "", "eta": "2026-07-11"}, {"id": "CT-007", "warehouse": "tc", "supplier": "澳柯瑪", "container": "6/10 日照大船（台中）", "freeTime": "", "eta": "2026-06-19"}, {"id": "CT-008", "warehouse": "tc", "supplier": "澳柯瑪", "container": "6/18 日照大船-長榮（台中，第2批）", "freeTime": "", "eta": "2026-06-28"}, {"id": "CT-009", "warehouse": "tc", "supplier": "澳柯瑪", "container": "7/5 日照大船-陽明（台中）", "freeTime": "", "eta": "2026-07-11"}, {"id": "CT-010", "warehouse": "tc", "supplier": "VESTFROST", "container": "VESTFROST 8/1 預計到港", "freeTime": "", "eta": "2026-08-01"}, {"id": "CT-011", "warehouse": "tp", "supplier": "冰泓", "container": "冰泓 6/26 預計到港", "freeTime": "", "eta": "2026-06-26"}, {"id": "CT-012", "warehouse": "tp", "supplier": "澳柯瑪", "container": "6/23 日照大船-萬海（基隆，第2批）", "freeTime": "", "eta": "2026-06-29"}, {"id": "CT-013", "warehouse": "tp", "supplier": "澳柯瑪", "container": "6/21 日照大船-陽明（基隆）", "freeTime": "", "eta": "2026-07-01"}, {"id": "CT-014", "warehouse": "tp", "supplier": "澳柯瑪", "container": "7/5 日照大船-陽明（基隆）", "freeTime": "", "eta": "2026-07-11"}];
+
+const SEED_TRANSIT_ITEMS = [{"id": "IT-001", "containerId": "CT-001", "model": "SD-309", "qty": 30, "eta": "2026-06-19", "deductedFromUnassigned": 0}, {"id": "IT-002", "containerId": "CT-001", "model": "BD-309INV", "qty": 33, "eta": "2026-06-19", "deductedFromUnassigned": 0}, {"id": "IT-003", "containerId": "CT-001", "model": "SD-200", "qty": 38, "eta": "2026-06-19", "deductedFromUnassigned": 0}, {"id": "IT-004", "containerId": "CT-001", "model": "SD-435", "qty": 24, "eta": "2026-06-19", "deductedFromUnassigned": 0}, {"id": "IT-005", "containerId": "CT-001", "model": "SD-665", "qty": 8, "eta": "2026-06-19", "deductedFromUnassigned": 0}, {"id": "IT-006", "containerId": "CT-001", "model": "SD-100", "qty": 96, "eta": "2026-06-19", "deductedFromUnassigned": 0}, {"id": "IT-007", "containerId": "CT-002", "model": "BD-146INV", "qty": 94, "eta": "2026-06-23", "deductedFromUnassigned": 0}, {"id": "IT-008", "containerId": "CT-002", "model": "BD-146INV", "qty": 188, "eta": "2026-06-23", "deductedFromUnassigned": 0}, {"id": "IT-009", "containerId": "CT-002", "model": "BD-266INV", "qty": 60, "eta": "2026-06-23", "deductedFromUnassigned": 0}, {"id": "IT-010", "containerId": "CT-002", "model": "BD-266INV", "qty": 120, "eta": "2026-06-23", "deductedFromUnassigned": 0}, {"id": "IT-011", "containerId": "CT-003", "model": "MF-506", "qty": 30, "eta": "2026-06-25", "deductedFromUnassigned": 0}, {"id": "IT-012", "containerId": "CT-003", "model": "MF-606", "qty": 25, "eta": "2026-06-25", "deductedFromUnassigned": 0}, {"id": "IT-013", "containerId": "CT-004", "model": "BD-409INV", "qty": 75, "eta": "2026-06-27", "deductedFromUnassigned": 0}, {"id": "IT-014", "containerId": "CT-004", "model": "BD-106INV", "qty": 80, "eta": "2026-06-27", "deductedFromUnassigned": 0}, {"id": "IT-015", "containerId": "CT-004", "model": "BD-146INV", "qty": 62, "eta": "2026-06-27", "deductedFromUnassigned": 0}, {"id": "IT-016", "containerId": "CT-004", "model": "BD-266INV", "qty": 40, "eta": "2026-06-27", "deductedFromUnassigned": 0}, {"id": "IT-017", "containerId": "CT-005", "model": "BD-206INV", "qty": 144, "eta": "2026-07-03", "deductedFromUnassigned": 0}, {"id": "IT-018", "containerId": "CT-005", "model": "SD-409", "qty": 75, "eta": "2026-07-03", "deductedFromUnassigned": 0}, {"id": "IT-019", "containerId": "CT-006", "model": "BD-609INV", "qty": 50, "eta": "2026-07-11", "deductedFromUnassigned": 0}, {"id": "IT-020", "containerId": "CT-006", "model": "SC-349", "qty": 75, "eta": "2026-07-11", "deductedFromUnassigned": 0}, {"id": "IT-021", "containerId": "CT-006", "model": "SC-349", "qty": 72, "eta": "2026-07-11", "deductedFromUnassigned": 0}, {"id": "IT-022", "containerId": "CT-006", "model": "BD-409INV", "qty": 75, "eta": "2026-07-11", "deductedFromUnassigned": 0}, {"id": "IT-023", "containerId": "CT-006", "model": "BD-206INV", "qty": 144, "eta": "2026-07-11", "deductedFromUnassigned": 0}, {"id": "IT-024", "containerId": "CT-007", "model": "SD-309", "qty": 30, "eta": "2026-06-19", "deductedFromUnassigned": 0}, {"id": "IT-025", "containerId": "CT-007", "model": "SD-100", "qty": 60, "eta": "2026-06-19", "deductedFromUnassigned": 0}, {"id": "IT-026", "containerId": "CT-007", "model": "SD-200", "qty": 44, "eta": "2026-06-19", "deductedFromUnassigned": 0}, {"id": "IT-027", "containerId": "CT-007", "model": "BD-309INV", "qty": 6, "eta": "2026-06-19", "deductedFromUnassigned": 0}, {"id": "IT-028", "containerId": "CT-007", "model": "SD-435", "qty": 12, "eta": "2026-06-19", "deductedFromUnassigned": 0}, {"id": "IT-029", "containerId": "CT-007", "model": "SD-665", "qty": 10, "eta": "2026-06-19", "deductedFromUnassigned": 0}, {"id": "IT-030", "containerId": "CT-007", "model": "BD-609INV", "qty": 21, "eta": "2026-06-19", "deductedFromUnassigned": 0}, {"id": "IT-031", "containerId": "CT-008", "model": "BD-106INV", "qty": 80, "eta": "2026-06-28", "deductedFromUnassigned": 0}, {"id": "IT-032", "containerId": "CT-008", "model": "BD-146INV", "qty": 62, "eta": "2026-06-28", "deductedFromUnassigned": 0}, {"id": "IT-033", "containerId": "CT-008", "model": "BD-206INV", "qty": 40, "eta": "2026-06-28", "deductedFromUnassigned": 0}, {"id": "IT-034", "containerId": "CT-008", "model": "BD-409INV", "qty": 75, "eta": "2026-06-28", "deductedFromUnassigned": 0}, {"id": "IT-035", "containerId": "CT-009", "model": "BD-609INV", "qty": 50, "eta": "2026-07-11", "deductedFromUnassigned": 0}, {"id": "IT-036", "containerId": "CT-009", "model": "SC-105", "qty": 60, "eta": "2026-07-11", "deductedFromUnassigned": 0}, {"id": "IT-037", "containerId": "CT-009", "model": "SC-115", "qty": 42, "eta": "2026-07-11", "deductedFromUnassigned": 0}, {"id": "IT-038", "containerId": "CT-009", "model": "BD-206INV", "qty": 72, "eta": "2026-07-11", "deductedFromUnassigned": 0}, {"id": "IT-039", "containerId": "CT-010", "model": "VT-407", "qty": 20, "eta": "2026-08-01", "deductedFromUnassigned": 0}, {"id": "IT-040", "containerId": "CT-011", "model": "MF-506", "qty": 30, "eta": "2026-06-26", "deductedFromUnassigned": 0}, {"id": "IT-041", "containerId": "CT-011", "model": "MF-606", "qty": 25, "eta": "2026-06-26", "deductedFromUnassigned": 0}, {"id": "IT-042", "containerId": "CT-012", "model": "BD-146INV", "qty": 47, "eta": "2026-06-29", "deductedFromUnassigned": 0}, {"id": "IT-043", "containerId": "CT-012", "model": "BD-206INV", "qty": 72, "eta": "2026-06-29", "deductedFromUnassigned": 0}, {"id": "IT-044", "containerId": "CT-012", "model": "BD-266INV", "qty": 30, "eta": "2026-06-29", "deductedFromUnassigned": 0}, {"id": "IT-045", "containerId": "CT-012", "model": "BD-309INV", "qty": 45, "eta": "2026-06-29", "deductedFromUnassigned": 0}, {"id": "IT-046", "containerId": "CT-012", "model": "BD-409INV", "qty": 37, "eta": "2026-06-29", "deductedFromUnassigned": 0}, {"id": "IT-047", "containerId": "CT-013", "model": "BD-609INV", "qty": 21, "eta": "2026-07-01", "deductedFromUnassigned": 0}, {"id": "IT-048", "containerId": "CT-013", "model": "SD-435", "qty": 12, "eta": "2026-07-01", "deductedFromUnassigned": 0}, {"id": "IT-049", "containerId": "CT-013", "model": "SD-665", "qty": 10, "eta": "2026-07-01", "deductedFromUnassigned": 0}, {"id": "IT-050", "containerId": "CT-013", "model": "SD-100", "qty": 60, "eta": "2026-07-01", "deductedFromUnassigned": 0}, {"id": "IT-051", "containerId": "CT-013", "model": "SD-200", "qty": 44, "eta": "2026-07-01", "deductedFromUnassigned": 0}, {"id": "IT-052", "containerId": "CT-013", "model": "SD-309", "qty": 36, "eta": "2026-07-01", "deductedFromUnassigned": 0}, {"id": "IT-053", "containerId": "CT-014", "model": "SC-105", "qty": 60, "eta": "2026-07-11", "deductedFromUnassigned": 0}, {"id": "IT-054", "containerId": "CT-014", "model": "SC-115", "qty": 42, "eta": "2026-07-11", "deductedFromUnassigned": 0}, {"id": "IT-055", "containerId": "CT-014", "model": "BD-609INV", "qty": 25, "eta": "2026-07-11", "deductedFromUnassigned": 0}];
+
+const SEED_PO_PENDING = [{"id": "POP-001", "warehouse": "tp", "po": "476730", "supplier": "VESTFROST", "eta": "2026年10月", "note": "無品項明細"}, {"id": "POP-002", "warehouse": "kh", "po": "476731", "supplier": "VESTFROST", "eta": "2026年10月", "note": "無品項明細"}, {"id": "POP-003", "warehouse": "kh", "po": "476732", "supplier": "VESTFROST", "eta": "2026年10月", "note": "無品項明細"}, {"id": "POP-004", "warehouse": "kh", "po": "476733", "supplier": "VESTFROST", "eta": "2026年10月", "note": "無品項明細"}, {"id": "POP-005", "warehouse": "kh", "po": "476988", "supplier": "VESTFROST", "eta": "2026年10月", "note": "無品項明細"}, {"id": "POP-006", "warehouse": "kh", "po": "（無編號）", "supplier": "奧馬", "eta": "2026年5月中", "note": "無品項明細，金額11895"}, {"id": "POP-007", "warehouse": "kh", "po": "（無編號）", "supplier": "捷盛", "eta": "未定", "note": "無品項明細，金額2300"}, {"id": "POP-008", "warehouse": "tc", "po": "APS5XR-26-01", "supplier": "三勝", "eta": "未定", "note": "無品項明細"}];
+
+const CATEGORIES = ["冰櫃","玻璃對拉冰櫃","直立式冷凍櫃","超低溫冰櫃","玻璃展示櫃","蛋糕櫃","酒櫃","餐飲設備"];
+const SUPPLIERS = ["澳柯瑪","冰泓","三勝","勞特","VESTFROST","奧馬","捷盛"];
+const STATUSES = ["下訂確認","生產中","已生產完","待出貨","海運中","已到港","清關中","已入庫","取消"];
+const WH_LABELS = { kh: "高雄倉", tc: "台中倉", tp: "台北倉" };
+const PORT_LABELS = { kh: "高雄港", tc: "台中港", tp: "基隆港" };
+
+const STATUS_COLORS = {
+  "下訂確認": { c: "#2563EB", bg: "#EFF6FF" },
+  "生產中": { c: "#2563EB", bg: "#EFF6FF" },
+  "已生產完": { c: "#059669", bg: "#ECFDF5" },
+  "待出貨": { c: "#D97706", bg: "#FFFBEB" },
+  "海運中": { c: "#D97706", bg: "#FFFBEB" },
+  "已到港": { c: "#059669", bg: "#ECFDF5" },
+  "清關中": { c: "#D97706", bg: "#FFFBEB" },
+  "已入庫": { c: "#059669", bg: "#ECFDF5" },
+  "取消": { c: "#9CA3AF", bg: "#F7F8FA" },
+};
+
+const CAT_COLOR_LIST = ["#2563EB","#059669","#D97706","#7C3AED","#0D9488","#DB2777","#B45309","#0891B2"];
+const catColor = (cat) => CAT_COLOR_LIST[CATEGORIES.indexOf(cat) % CAT_COLOR_LIST.length] || "#6B7280";
+
+const NAV_ITEMS = ({ lowStockCount }) => [
+  ["overview", "◈", "總覽"],
+  ["inventory", "📦", "庫存管理"],
+  ["transit", "🚢", "在途與待分配"],
+  ["orders", "📋", "訂單管理"],
+  ["reorder", "⚠️", "補貨提醒", lowStockCount],
+  ["settings", "⚙️", "安全水位設定"],
+];
+
+// ============================================================
+// PERSISTENT STORAGE HOOKS
+// ============================================================
+// 部署好的 Google Apps Script 網頁應用程式網址。
+// 平台所有資料的讀寫都會透過這個網址，存取你建立的 Google Sheet。
+const SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbyqHy8yFZf9qhtJPmd_YfA65rRuGkWNUg8iBnCKM_GTDD06ZevJSAG0368dokiKjvoO7w/exec";
+
+// 平台內部使用的儲存 key，對應到 Google Sheet 裡的分頁（工作表）名稱。
+const SHEET_TAB_BY_KEY = {
+  inv_products_v1: "products",
+  inv_orders_v1: "orders",
+  inv_containers_v1: "containers",
+  inv_transit_items_v1: "transitItems",
+  inv_po_pending_v1: "poPending",
+  inv_unassigned_v1: "unassigned",
+  inv_admin_password_v1: "adminPassword",
+};
+
+// 讀取指定分頁目前存放的資料（任何人都可以讀取，不需密碼）。
+async function sheetsGet(tabName) {
+  const res = await fetch(`${SHEETS_API_URL}?sheet=${encodeURIComponent(tabName)}`);
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || "讀取失敗");
+  return data.value; // 字串（JSON 文字）或 null
+}
+
+// 寫入指定分頁的資料，需要附帶管理者密碼，密碼錯誤會寫入失敗。
+async function sheetsSet(tabName, value, password) {
+  const res = await fetch(SHEETS_API_URL, {
+    method: "POST",
+    body: JSON.stringify({ sheet: tabName, value, password }),
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || "寫入失敗");
+  return data;
+}
+
+// adminPassword 必須先載入，其他 useStoredState 才能用它來寫入資料；
+// 用一個簡單的模組層暫存變數讓所有 hook 實例共用目前的密碼。
+let currentAdminPassword = "0000";
+
+function useStoredState(key, initialValue) {
+  const [value, setValue] = useState(initialValue);
+  const [loaded, setLoaded] = useState(false);
+  const tabName = SHEET_TAB_BY_KEY[key];
+
+  useEffect(() => {
+    let mounted = true;
+    let settled = false;
+
+    const finish = () => {
+      if (mounted && !settled) {
+        settled = true;
+        setLoaded(true);
+      }
+    };
+
+    // 安全機制：避免畫面永遠卡在「載入中」，最多等 8 秒就放棄、改用預設資料。
+    const timeoutId = setTimeout(finish, 8000);
+
+    (async () => {
+      try {
+        if (!tabName) { finish(); return; }
+        const raw = await sheetsGet(tabName);
+        if (mounted && raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            setValue(parsed);
+            if (key === "inv_admin_password_v1" && typeof parsed === "string") {
+              currentAdminPassword = parsed;
+            }
+          } catch (parseErr) {
+            // 存放的內容不是合法 JSON，保留預設值
+          }
+        }
+      } catch (e) {
+        // 讀取失敗（網路問題、分頁是空的等），保留預設值即可
+      } finally {
+        clearTimeout(timeoutId);
+        finish();
+      }
+    })();
+
+    return () => { mounted = false; clearTimeout(timeoutId); };
+  }, [key, tabName]);
+
+  const updateValue = useCallback((newValue) => {
+    setValue((prev) => {
+      const resolved = typeof newValue === "function" ? newValue(prev) : newValue;
+      if (tabName) {
+        if (key === "inv_admin_password_v1" && typeof resolved === "string") {
+          currentAdminPassword = resolved;
+        }
+        sheetsSet(tabName, JSON.stringify(resolved), currentAdminPassword).catch(() => {
+          // 寫入失敗（多半是密碼不對，或網路問題）；畫面上的資料仍會先更新，
+          // 但不會真正存進 Google Sheet，重新整理後可能會被還原。
+        });
+      }
+      return resolved;
+    });
+  }, [key, tabName]);
+
+  return [value, updateValue, loaded];
+}
+
+// Tracks viewport width so components can switch between desktop and
+// mobile layouts. Inline styles can't express @media queries, so this
+// hook is the mechanism that drives all responsive behavior in this app.
+function useViewport() {
+  const [width, setWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1024);
+  useEffect(() => {
+    const onResize = () => setWidth(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  return { width, isMobile: width < 760 };
+}
+
+// ============================================================
+// SMALL UI PRIMITIVES
+// ============================================================
+function Badge({ children, color = "#6B7280", bg = "#F7F8FA" }) {
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", padding: "2px 8px",
+      borderRadius: 5, fontSize: 11, fontWeight: 600, color, background: bg,
+      whiteSpace: "nowrap", lineHeight: 1.6,
+    }}>{children}</span>
+  );
+}
+
+function StatCard({ label, value, sub, tone }) {
+  const toneColor = tone === "danger" ? "#DC2626" : tone === "warning" ? "#D97706" : tone === "success" ? "#059669" : "#15171C";
+  return (
+    <div style={{
+      background: "#FFFFFF", border: "1px solid #E4E7EC", borderRadius: 12,
+      padding: "16px 18px", flex: 1, minWidth: 150,
+    }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>{label}</div>
+      <div style={{ fontSize: 26, fontWeight: 700, color: toneColor, letterSpacing: "-0.02em", lineHeight: 1, marginBottom: 4 }}>{value}</div>
+      {sub && <div style={{ fontSize: 11.5, color: "#6B7280" }}>{sub}</div>}
+    </div>
+  );
+}
+
+function IconButton({ onClick, children, title, danger }) {
+  return (
+    <button type="button"
+      onClick={onClick}
+      title={title}
+      style={{
+        border: "1px solid " + (danger ? "#FECACA" : "#E4E7EC"),
+        background: danger ? "#FEF2F2" : "#FFFFFF",
+        color: danger ? "#DC2626" : "#374151",
+        borderRadius: 6, padding: "4px 9px", fontSize: 11.5, fontWeight: 500,
+        cursor: "pointer", fontFamily: "inherit",
+      }}
+    >{children}</button>
+  );
+}
+
+function PrimaryButton({ onClick, children, style }) {
+  return (
+    <button type="button"
+      onClick={onClick}
+      style={{
+        border: "none", background: "#15171C", color: "#fff",
+        borderRadius: 7, padding: "8px 16px", fontSize: 12.5, fontWeight: 600,
+        cursor: "pointer", fontFamily: "inherit", ...style,
+      }}
+    >{children}</button>
+  );
+}
+
+function GhostButton({ onClick, children, active, style }) {
+  return (
+    <button type="button"
+      onClick={onClick}
+      style={{
+        border: "1px solid " + (active ? "#15171C" : "#E4E7EC"),
+        background: active ? "#15171C" : "#FFFFFF",
+        color: active ? "#fff" : "#374151",
+        borderRadius: 7, padding: "7px 14px", fontSize: 12.5, fontWeight: 500,
+        cursor: "pointer", fontFamily: "inherit", ...style,
+      }}
+    >{children}</button>
+  );
+}
+
+function Field({ label, children }) {
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ fontSize: 11.5, fontWeight: 600, color: "#6B7280", marginBottom: 5 }}>{label}</div>
+      {children}
+    </div>
+  );
+}
+
+// Shared responsive grid for modal/form layouts: collapses any multi-column
+// grid down to a single column on narrow screens so fields don't get crushed.
+function FormGrid({ columns = 2, gap = 10, children }) {
+  const { isMobile } = useViewport();
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : `repeat(${columns}, 1fr)`, gap }}>
+      {children}
+    </div>
+  );
+}
+
+const inputStyle = {
+  width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #E4E7EC",
+  fontSize: 13, fontFamily: "inherit", boxSizing: "border-box", color: "#15171C",
+};
+
+function TextInput(props) {
+  return <input {...props} style={{ ...inputStyle, ...(props.style || {}) }} />;
+}
+function Select(props) {
+  return <select {...props} style={{ ...inputStyle, ...(props.style || {}) }} />;
+}
+
+function ConfirmModal({ title, message, onConfirm, onCancel, confirmLabel = "確定刪除" }) {
+  return (
+    <Modal title={title} onClose={onCancel} width={360}>
+      <div style={{ fontSize: 13, color: "#374151", marginBottom: 18, lineHeight: 1.6 }}>{message}</div>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+        <GhostButton onClick={onCancel}>取消</GhostButton>
+        <PrimaryButton onClick={onConfirm} style={{ background: "#DC2626" }}>{confirmLabel}</PrimaryButton>
+      </div>
+    </Modal>
+  );
+}
+
+function Modal({ title, onClose, children, width = 480 }) {
+  const { isMobile } = useViewport();
+  return (
+    <div style={{
+      position: "fixed", inset: 0, background: "rgba(15,17,21,0.45)",
+      display: "flex", alignItems: isMobile ? "flex-end" : "center", justifyContent: "center",
+      zIndex: 100, padding: isMobile ? 0 : 20,
+    }} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{
+        background: "#fff",
+        borderRadius: isMobile ? "16px 16px 0 0" : 14,
+        width: isMobile ? "100%" : width,
+        maxWidth: "100%",
+        maxHeight: isMobile ? "92vh" : "88vh",
+        overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
+      }}>
+        <div style={{
+          padding: isMobile ? "14px 16px" : "16px 20px", borderBottom: "1px solid #E4E7EC", display: "flex",
+          alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, background: "#fff",
+        }}>
+          <div style={{ fontSize: 14.5, fontWeight: 700 }}>{title}</div>
+          <button type="button" onClick={onClose} style={{ border: "none", background: "none", fontSize: 22, cursor: "pointer", color: "#9CA3AF", lineHeight: 1, padding: 4 }}>×</button>
+        </div>
+        <div style={{ padding: isMobile ? 16 : 20 }}>{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function AuthModal({ onClose, onSubmit, error }) {
+  const [pw, setPw] = useState("");
+  return (
+    <Modal title="輸入管理者密碼" onClose={onClose} width={360}>
+      <Field label="密碼">
+        <TextInput
+          type="password" autoFocus value={pw}
+          onChange={e => setPw(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") onSubmit(pw); }}
+        />
+      </Field>
+      {error && <div style={{ color: "#DC2626", fontSize: 12, marginBottom: 10 }}>{error}</div>}
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
+        <GhostButton onClick={onClose}>取消</GhostButton>
+        <PrimaryButton onClick={() => onSubmit(pw)}>解鎖</PrimaryButton>
+      </div>
+    </Modal>
+  );
+}
+
+// ============================================================
+// MAIN APP
+// ============================================================
+function LoadingState() {
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setSeconds(s => s + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <div style={{ padding: 40, textAlign: "center", color: "#9CA3AF" }}>
+      <div style={{ marginBottom: 8 }}>載入中...</div>
+      {seconds >= 3 && (
+        <div style={{ fontSize: 11.5, color: "#D97706" }}>
+          已等待 {seconds} 秒。最多 4 秒後會自動以預設資料繼續顯示，不會無限卡住。
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InventoryPlatformInner() {
+  const { isMobile } = useViewport();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [mode, setMode] = useState("viewer"); // "admin" | "viewer" - default to viewer for safety
+  const [page, setPage] = useState("overview");
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authError, setAuthError] = useState("");
+
+  const [products, setProducts, productsLoaded] = useStoredState("inv_products_v1", SEED_PRODUCTS);
+  const [orders, setOrders, ordersLoaded] = useStoredState("inv_orders_v1", SEED_ORDERS);
+  const [containers, setContainers, containersLoaded] = useStoredState("inv_containers_v1", SEED_CONTAINERS);
+  const [transitItems, setTransitItems, transitItemsLoaded] = useStoredState("inv_transit_items_v1", SEED_TRANSIT_ITEMS);
+  const [poPending, setPoPending, poPendingLoaded] = useStoredState("inv_po_pending_v1", SEED_PO_PENDING);
+  const [unassigned, setUnassigned, unassignedLoaded] = useStoredState("inv_unassigned_v1", []);
+  const [adminPassword, setAdminPassword, passwordLoaded] = useStoredState("inv_admin_password_v1", "0000");
+
+  const allLoaded = productsLoaded && ordersLoaded && containersLoaded && transitItemsLoaded && poPendingLoaded && unassignedLoaded && passwordLoaded;
+
+  const isAdmin = mode === "admin";
+
+  const requestAdminMode = () => {
+    setAuthError("");
+    setShowAuthModal(true);
+  };
+
+  const tryUnlock = (inputPassword) => {
+    if (inputPassword === adminPassword) {
+      setMode("admin");
+      setShowAuthModal(false);
+      setAuthError("");
+    } else {
+      setAuthError("密碼錯誤，請再試一次");
+    }
+  };
+
+  // Rename-model state lives here (top level) rather than inside InventoryPage,
+  // so the modal survives even if InventoryPage itself re-renders or its
+  // subtree gets reconciled away for any reason.
+  const [renameModalModel, setRenameModalModel] = useState(null);
+
+  const renameModel = (oldName, newName) => {
+    const trimmed = (newName || "").trim();
+    if (!trimmed || trimmed === oldName) { setRenameModalModel(null); return; }
+    setProducts(prev => prev.map(p => p.model === oldName ? { ...p, model: trimmed } : p));
+    setOrders(prev => prev.map(o => ({
+      ...o,
+      items: o.items.map(it => it.model === oldName ? { ...it, model: trimmed } : it),
+    })));
+    setTransitItems(prev => prev.map(t => t.model === oldName ? { ...t, model: trimmed } : t));
+    setRenameModalModel(null);
+  };
+
+  // Moves a single order line-item's quantity into the unassigned-stock pool.
+  // Can be triggered any time (not date-gated), and marks the item as
+  // transferred so it won't get double-counted.
+  const transferOrderItemToUnassigned = (orderId, itemIdx) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+    const item = order.items[itemIdx];
+    if (!item || item.transferred) return;
+
+    setUnassigned(prev => [...prev, {
+      id: "UN-" + Date.now(),
+      model: item.model,
+      supplier: order.supplier,
+      qty: item.qty,
+      note: `來自訂單 ${order.id}`,
+    }]);
+    setOrders(prev => prev.map(o => o.id !== orderId ? o : {
+      ...o,
+      items: o.items.map((it, idx) => idx === itemIdx ? { ...it, transferred: true } : it),
+    }));
+  };
+
+  // For 整批出貨 orders with a confirmed destination warehouse: creates a new
+  // in-transit container (using the order's supplier) plus a transit item for
+  // every line item in the order, all in one shot. Also marks the order as
+  // shipped so "確認出貨" can't be triggered twice for the same order.
+  const confirmOrderShipment = (orderId, eta) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order || !order.destinationWarehouse || order.items.length === 0) return;
+
+    const containerId = "CT-" + Date.now();
+    setContainers(prev => [...prev, {
+      id: containerId,
+      warehouse: order.destinationWarehouse,
+      supplier: order.supplier,
+      container: "",
+      freeTime: "",
+      eta,
+    }]);
+    setTransitItems(prev => [
+      ...prev,
+      ...order.items.map((it, i) => ({
+        id: "IT-" + Date.now() + "-" + i,
+        containerId,
+        model: it.model,
+        qty: it.qty,
+        eta,
+        deductedFromUnassigned: 0,
+      })),
+    ]);
+    setOrders(prev => prev.map(o => o.id !== orderId ? o : { ...o, status: "海運中", shipped: true }));
+  };
+
+  // ---------- derived data ----------
+  const lowStockCount = useMemo(() => products.filter(p => p.safetyStock > 0 && (p.kh + p.tc + p.tp) < p.safetyStock).length, [products]);
+  const khLow = useMemo(() => products.filter(p => p.kh < 3).length, [products]);
+  const tcLow = useMemo(() => products.filter(p => p.tc < 3).length, [products]);
+  const tpLow = useMemo(() => products.filter(p => p.tp < 3).length, [products]);
+  const transitTotalQty = useMemo(() => transitItems.reduce((a, t) => a + t.qty, 0), [transitItems]);
+  const activeOrdersCount = useMemo(() => orders.filter(o => o.status !== "已入庫" && o.status !== "取消").length, [orders]);
+
+  const productByModel = useMemo(() => {
+    const m = {};
+    products.forEach(p => { m[p.model] = p; });
+    return m;
+  }, [products]);
+
+  return (
+    <div style={{
+      fontFamily: "'Inter', 'PingFang TC', 'Microsoft JhengHei', sans-serif",
+      background: "#F0F2F5", minHeight: "100%", color: "#15171C", fontSize: 13,
+      display: "flex", height: "100vh", overflow: "hidden",
+    }}>
+      {/* Sidebar (desktop only) */}
+      {!isMobile && (
+        <aside style={{ width: 196, background: "#15171C", display: "flex", flexDirection: "column", flexShrink: 0 }}>
+          <div style={{ padding: "18px 16px 14px", borderBottom: "1px solid #2A2D33" }}>
+            <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.12em", color: "#8B8F98", textTransform: "uppercase", marginBottom: 3 }}>Cold Chain Ops</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "#fff", letterSpacing: "-0.02em" }}>進口庫存平台</div>
+          </div>
+          <nav style={{ padding: "10px 8px", flex: 1 }}>
+            {NAV_ITEMS({ lowStockCount }).map(([key, icon, label, badge]) => (
+              <div key={key} onClick={() => setPage(key)} style={{
+                display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 7,
+                cursor: "pointer", color: page === key ? "#fff" : "#9CA3AF", fontSize: 12.5, fontWeight: 500,
+                background: page === key ? "#2563EB" : "transparent", marginBottom: 2, userSelect: "none",
+              }}>
+                <span style={{ width: 16, textAlign: "center", fontSize: 13 }}>{icon}</span>
+                <span>{label}</span>
+                {!!badge && <span style={{ marginLeft: "auto", background: "#DC2626", color: "#fff", fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 9 }}>{badge}</span>}
+              </div>
+            ))}
+          </nav>
+          <div style={{ padding: 12, borderTop: "1px solid #2A2D33" }}>
+            <div style={{ fontSize: 10.5, color: "#6B7280", marginBottom: 6, paddingLeft: 2 }}>檢視模式</div>
+            <div style={{ display: "flex", gap: 4 }}>
+              <button type="button" onClick={requestAdminMode} style={{
+                flex: 1, padding: "6px 0", borderRadius: 6, fontSize: 11.5, fontWeight: 600, cursor: "pointer",
+                border: "none", background: isAdmin ? "#2563EB" : "#2A2D33", color: isAdmin ? "#fff" : "#9CA3AF",
+              }}>{isAdmin ? "管理者 🔓" : "管理者 🔒"}</button>
+              <button type="button" onClick={() => setMode("viewer")} style={{
+                flex: 1, padding: "6px 0", borderRadius: 6, fontSize: 11.5, fontWeight: 600, cursor: "pointer",
+                border: "none", background: !isAdmin ? "#2563EB" : "#2A2D33", color: !isAdmin ? "#fff" : "#9CA3AF",
+              }}>僅檢視</button>
+            </div>
+          </div>
+        </aside>
+      )}
+
+      {/* Mobile full-screen nav drawer */}
+      {isMobile && mobileNavOpen && (
+        <div style={{
+          position: "fixed", inset: 0, background: "#15171C", zIndex: 200,
+          display: "flex", flexDirection: "column",
+        }}>
+          <div style={{ padding: "18px 18px 14px", borderBottom: "1px solid #2A2D33", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.12em", color: "#8B8F98", textTransform: "uppercase", marginBottom: 3 }}>Cold Chain Ops</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "#fff", letterSpacing: "-0.02em" }}>進口庫存平台</div>
+            </div>
+            <button type="button" onClick={() => setMobileNavOpen(false)} style={{ border: "none", background: "none", color: "#9CA3AF", fontSize: 26, cursor: "pointer", padding: 4 }}>×</button>
+          </div>
+          <nav style={{ padding: "14px 12px", flex: 1, overflowY: "auto" }}>
+            {NAV_ITEMS({ lowStockCount }).map(([key, icon, label, badge]) => (
+              <div key={key} onClick={() => { setPage(key); setMobileNavOpen(false); }} style={{
+                display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 9,
+                cursor: "pointer", color: page === key ? "#fff" : "#9CA3AF", fontSize: 15, fontWeight: 500,
+                background: page === key ? "#2563EB" : "transparent", marginBottom: 4, userSelect: "none",
+              }}>
+                <span style={{ width: 22, textAlign: "center", fontSize: 17 }}>{icon}</span>
+                <span>{label}</span>
+                {!!badge && <span style={{ marginLeft: "auto", background: "#DC2626", color: "#fff", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 10 }}>{badge}</span>}
+              </div>
+            ))}
+          </nav>
+          <div style={{ padding: 16, borderTop: "1px solid #2A2D33" }}>
+            <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 8, paddingLeft: 2 }}>檢視模式</div>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button type="button" onClick={() => { requestAdminMode(); }} style={{
+                flex: 1, padding: "11px 0", borderRadius: 8, fontSize: 13.5, fontWeight: 600, cursor: "pointer",
+                border: "none", background: isAdmin ? "#2563EB" : "#2A2D33", color: isAdmin ? "#fff" : "#9CA3AF",
+              }}>{isAdmin ? "管理者 🔓" : "管理者 🔒"}</button>
+              <button type="button" onClick={() => setMode("viewer")} style={{
+                flex: 1, padding: "11px 0", borderRadius: 8, fontSize: 13.5, fontWeight: 600, cursor: "pointer",
+                border: "none", background: !isAdmin ? "#2563EB" : "#2A2D33", color: !isAdmin ? "#fff" : "#9CA3AF",
+              }}>僅檢視</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAuthModal && (
+        <AuthModal
+          onClose={() => setShowAuthModal(false)}
+          onSubmit={tryUnlock}
+          error={authError}
+        />
+      )}
+
+      {renameModalModel && (
+        <RenameModal
+          oldName={renameModalModel}
+          existingModels={products.map(p => p.model)}
+          affectedOrderItems={orders.reduce((a, o) => a + o.items.filter(it => it.model === renameModalModel).length, 0)}
+          affectedTransit={transitItems.filter(t => t.model === renameModalModel).length}
+          onClose={() => setRenameModalModel(null)}
+          onConfirm={(newName) => renameModel(renameModalModel, newName)}
+        />
+      )}
+
+      {/* Main */}
+      <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+        <div style={{
+          background: "#fff", borderBottom: "1px solid #E4E7EC", padding: isMobile ? "12px 14px" : "13px 24px",
+          display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 5,
+          gap: 10,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+            {isMobile && (
+              <button type="button" onClick={() => setMobileNavOpen(true)} style={{
+                border: "none", background: "#F7F8FA", borderRadius: 8, width: 34, height: 34, fontSize: 16,
+                cursor: "pointer", flexShrink: 0, color: "#15171C",
+              }}>☰</button>
+            )}
+            <div style={{ fontSize: isMobile ? 14 : 15, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {{
+                overview: "總覽", inventory: "庫存管理", transit: "在途與待分配",
+                orders: "訂單管理", reorder: "補貨提醒", settings: "安全水位設定",
+              }[page]}
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+            {!isAdmin && !isMobile && <Badge color="#9CA3AF" bg="#F7F8FA">僅檢視模式 — 資料唯讀</Badge>}
+            {!isMobile && <div style={{ fontSize: 11, color: "#9CA3AF", fontFamily: "monospace" }}>2026-06-16</div>}
+          </div>
+        </div>
+
+        <div style={{ padding: isMobile ? "14px 12px" : "20px 24px", flex: 1 }}>
+          {!allLoaded ? (
+            <LoadingState />
+          ) : page === "overview" ? (
+            <OverviewPage
+              products={products} orders={orders} transitItems={transitItems} unassigned={unassigned}
+              lowStockCount={lowStockCount} khLow={khLow} tcLow={tcLow} tpLow={tpLow}
+              transitTotalQty={transitTotalQty} activeOrdersCount={activeOrdersCount}
+              setPage={setPage}
+            />
+          ) : page === "inventory" ? (
+            <InventoryPage products={products} setProducts={setProducts} isAdmin={isAdmin} transitItems={transitItems} setTransitItems={setTransitItems} poPending={poPending} orders={orders} setOrders={setOrders} renameModalModel={renameModalModel} setRenameModalModel={setRenameModalModel} renameModel={renameModel} />
+          ) : page === "transit" ? (
+            <TransitPage
+              containers={containers} setContainers={setContainers}
+              transitItems={transitItems} setTransitItems={setTransitItems}
+              poPending={poPending} setPoPending={setPoPending}
+              unassigned={unassigned} setUnassigned={setUnassigned}
+              isAdmin={isAdmin} productByModel={productByModel}
+            />
+          ) : page === "orders" ? (
+            <OrdersPage orders={orders} setOrders={setOrders} isAdmin={isAdmin} products={products} onTransferItem={transferOrderItemToUnassigned} onConfirmShipment={confirmOrderShipment} />
+          ) : page === "reorder" ? (
+            <ReorderPage products={products} transitItems={transitItems} />
+          ) : page === "settings" ? (
+            <SettingsPage products={products} setProducts={setProducts} isAdmin={isAdmin} adminPassword={adminPassword} setAdminPassword={setAdminPassword} />
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// OVERVIEW PAGE
+// ============================================================
+function OverviewPage({ products, orders, transitItems, unassigned, lowStockCount, khLow, tcLow, tpLow, transitTotalQty, activeOrdersCount, setPage }) {
+  const { isMobile } = useViewport();
+  const sortedByKh = useMemo(() => [...products].sort((a, b) => a.kh - b.kh).slice(0, 8), [products]);
+  const unassignedTotal = unassigned.reduce((a, u) => a + (u.qty || 0), 0);
+
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 12, marginBottom: 18, flexWrap: "wrap" }}>
+        <StatCard label="追蹤型號數" value={products.length} sub="高雄／台中／台北 三倉庫" />
+        <StatCard label="進行中訂單" value={activeOrdersCount} sub={`共 ${orders.length} 筆訂單記錄`} />
+        <StatCard label="在途總數量" value={transitTotalQty.toLocaleString()} sub={`${transitItems.length} 筆在途記錄`} tone="success" />
+        <StatCard label="低於安全水位" value={lowStockCount} sub="點擊「補貨提醒」查看明細" tone={lowStockCount > 0 ? "danger" : undefined} />
+      </div>
+
+      <div style={{
+        background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 10, padding: "11px 16px",
+        display: "flex", alignItems: "center", gap: 10, marginBottom: 18, cursor: "pointer",
+      }} onClick={() => setPage("reorder")}>
+        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#DC2626", flexShrink: 0 }} />
+        <div style={{ fontSize: 12.5, color: "#991B1B", fontWeight: 500, flex: 1 }}>
+          高雄倉 {khLow} 項／台中倉 {tcLow} 項／台北倉 {tpLow} 項 庫存低於 3 台 ・ {lowStockCount} 項型號已低於設定的安全水位
+        </div>
+        <span style={{ fontSize: 12, color: "#DC2626", fontWeight: 600 }}>查看補貨清單 →</span>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.3fr 1fr", gap: 16 }}>
+        <div style={{ background: "#fff", border: "1px solid #E4E7EC", borderRadius: 12, overflow: "hidden" }}>
+          <div style={{ padding: "12px 16px", borderBottom: "1px solid #E4E7EC", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+            <div style={{ fontWeight: 700, fontSize: 13 }}>三倉庫存最低 8 項（依高雄倉排序）</div>
+            <span style={{ fontSize: 11.5, color: "#2563EB", cursor: "pointer", fontWeight: 500 }} onClick={() => setPage("inventory")}>查看全部 →</span>
+          </div>
+          <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "#F7F8FA" }}>
+                {["型號", "分類", "高雄", "台中", "台北", "安全水位"].map(h => (
+                  <th key={h} style={{ textAlign: "left", fontSize: 10.5, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", padding: "7px 14px", borderBottom: "1px solid #E4E7EC" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {sortedByKh.map(p => (
+                <tr key={p.model}>
+                  <td style={{ padding: "7px 14px", fontWeight: 700, fontSize: 12.5, borderBottom: "1px solid #E4E7EC" }}>{p.model}</td>
+                  <td style={{ padding: "7px 14px", borderBottom: "1px solid #E4E7EC" }}><Badge color={catColor(p.category)} bg={catColor(p.category) + "1A"}>{p.category}</Badge></td>
+                  <td style={{ padding: "7px 14px", fontFamily: "monospace", fontSize: 12, borderBottom: "1px solid #E4E7EC", color: p.kh < 3 ? "#DC2626" : p.kh < 10 ? "#D97706" : "#15171C", fontWeight: p.kh < 10 ? 700 : 400 }}>{p.kh}</td>
+                  <td style={{ padding: "7px 14px", fontFamily: "monospace", fontSize: 12, borderBottom: "1px solid #E4E7EC" }}>{p.tc}</td>
+                  <td style={{ padding: "7px 14px", fontFamily: "monospace", fontSize: 12, borderBottom: "1px solid #E4E7EC" }}>{p.tp}</td>
+                  <td style={{ padding: "7px 14px", fontFamily: "monospace", fontSize: 12, borderBottom: "1px solid #E4E7EC", color: "#9CA3AF" }}>{p.safetyStock || "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ background: "#fff", border: "1px solid #E4E7EC", borderRadius: 12, overflow: "hidden" }}>
+            <div style={{ padding: "12px 16px", borderBottom: "1px solid #E4E7EC", fontWeight: 700, fontSize: 13 }}>待分配庫存（已生產未分倉）</div>
+            <div style={{ padding: "16px" }}>
+              {unassigned.length === 0 ? (
+                <div style={{ textAlign: "center", color: "#9CA3AF", fontSize: 12, padding: "16px 0" }}>尚無資料，可至「在途與待分配」頁新增</div>
+              ) : (
+                <div style={{ fontSize: 22, fontWeight: 700, color: "#7C3AED" }}>{unassignedTotal.toLocaleString()} <span style={{ fontSize: 12, color: "#9CA3AF", fontWeight: 400 }}>台，共 {unassigned.length} 筆</span></div>
+              )}
+            </div>
+          </div>
+
+          <div style={{ background: "#fff", border: "1px solid #E4E7EC", borderRadius: 12, overflow: "hidden" }}>
+            <div style={{ padding: "12px 16px", borderBottom: "1px solid #E4E7EC", fontWeight: 700, fontSize: 13 }}>最新訂單狀態</div>
+            <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <tbody>
+                {orders.slice(0, 6).map(o => {
+                  const sc = STATUS_COLORS[o.status] || { c: "#6B7280", bg: "#F7F8FA" };
+                  return (
+                    <tr key={o.id}>
+                      <td style={{ padding: "8px 14px", fontFamily: "monospace", fontSize: 11.5, color: "#2563EB", fontWeight: 600, borderBottom: "1px solid #E4E7EC" }}>{o.id}</td>
+                      <td style={{ padding: "8px 14px", fontSize: 12, borderBottom: "1px solid #E4E7EC" }}>{o.supplier}</td>
+                      <td style={{ padding: "8px 14px", borderBottom: "1px solid #E4E7EC", textAlign: "right" }}><Badge color={sc.c} bg={sc.bg}>{o.status}</Badge></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// INVENTORY PAGE
+// ============================================================
+function InventoryPage({ products, setProducts, isAdmin, transitItems, setTransitItems, poPending, orders, setOrders, renameModalModel, setRenameModalModel, renameModel }) {
+  const [wh, setWh] = useState("all");
+  const [category, setCategory] = useState("all");
+  const [search, setSearch] = useState("");
+  const [editing, setEditing] = useState(null); // model being edited
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  const filtered = useMemo(() => {
+    let data = products.filter(p => p.model.toLowerCase().includes(search.toLowerCase()));
+    if (category !== "all") data = data.filter(p => p.category === category);
+    return data;
+  }, [products, category, search]);
+
+  const updateField = (model, field, value) => {
+    setProducts(prev => prev.map(p => p.model === model ? { ...p, [field]: value } : p));
+  };
+
+  const [confirmDeleteModel, setConfirmDeleteModel] = useState(null);
+
+  const deleteProduct = (model) => {
+    setProducts(prev => prev.filter(p => p.model !== model));
+    setConfirmDeleteModel(null);
+  };
+
+  const transitByModel = useMemo(() => {
+    const m = {};
+    transitItems.forEach(t => { m[t.model] = (m[t.model] || 0) + t.qty; });
+    return m;
+  }, [transitItems]);
+
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap", alignItems: "center" }}>
+        <GhostButton active={wh === "all"} onClick={() => setWh("all")}>三倉並列</GhostButton>
+        <GhostButton active={wh === "kh"} onClick={() => setWh("kh")}>高雄倉</GhostButton>
+        <GhostButton active={wh === "tc"} onClick={() => setWh("tc")}>台中倉</GhostButton>
+        <GhostButton active={wh === "tp"} onClick={() => setWh("tp")}>台北倉</GhostButton>
+        <div style={{ flex: 1 }} />
+        {isAdmin && <PrimaryButton onClick={() => setShowAddModal(true)}>＋ 新增型號</PrimaryButton>}
+      </div>
+
+      <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
+        <div onClick={() => setCategory("all")} style={{
+          padding: "5px 13px", borderRadius: 20, fontSize: 11.5, fontWeight: 500, cursor: "pointer",
+          border: "1px solid " + (category === "all" ? "#15171C" : "#E4E7EC"),
+          background: category === "all" ? "#15171C" : "#fff", color: category === "all" ? "#fff" : "#6B7280",
+        }}>全部 ({products.length})</div>
+        {CATEGORIES.map(cat => {
+          const count = products.filter(p => p.category === cat).length;
+          const active = category === cat;
+          return (
+            <div key={cat} onClick={() => setCategory(cat)} style={{
+              padding: "5px 13px", borderRadius: 20, fontSize: 11.5, fontWeight: 500, cursor: "pointer",
+              border: "1px solid " + (active ? catColor(cat) : "#E4E7EC"),
+              background: active ? catColor(cat) : "#fff", color: active ? "#fff" : "#6B7280",
+            }}>{cat} ({count})</div>
+          );
+        })}
+      </div>
+
+      <div style={{ background: "#fff", border: "1px solid #E4E7EC", borderRadius: 12, overflow: "hidden", marginBottom: 16 }}>
+        <div style={{ padding: "11px 16px", borderBottom: "1px solid #E4E7EC", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+          <div style={{ fontWeight: 700, fontSize: 13 }}>庫存管理 - {wh === "all" ? "三倉並列" : WH_LABELS[wh]}</div>
+          <TextInput placeholder="搜尋型號..." value={search} onChange={e => setSearch(e.target.value)} style={{ width: 200, maxWidth: "100%" }} />
+        </div>
+        <div style={{ maxHeight: 560, overflowY: "auto" }}>
+          <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead style={{ position: "sticky", top: 0 }}>
+              <tr style={{ background: "#F7F8FA" }}>
+                <th style={thStyle}>型號</th>
+                <th style={thStyle}>分類</th>
+                {wh === "all" ? (
+                  <>
+                    <th style={thStyle}>高雄倉</th>
+                    <th style={thStyle}>台中倉</th>
+                    <th style={thStyle}>台北倉</th>
+                  </>
+                ) : (
+                  <th style={thStyle}>{WH_LABELS[wh]}庫存</th>
+                )}
+                <th style={thStyle}>安全水位</th>
+                <th style={thStyle}>在途</th>
+                <th style={thStyle}>狀態</th>
+                {isAdmin && <th style={thStyle}>操作</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(p => {
+                const total = p.kh + p.tc + p.tp;
+                const isLow = p.safetyStock > 0 && total < p.safetyStock;
+                const isEditing = editing === p.model;
+                const transitQty = transitByModel[p.model] || 0;
+                return (
+                  <tr key={p.model}>
+                    <td style={{ ...tdStyle, fontWeight: 700 }}>{p.model}</td>
+                    <td style={tdStyle}><Badge color={catColor(p.category)} bg={catColor(p.category) + "1A"}>{p.category}</Badge></td>
+                    {wh === "all" ? (
+                      <>
+                        <td style={tdStyle}>{isEditing && isAdmin ? <NumberCell value={p.kh} onChange={v => updateField(p.model, "kh", v)} /> : <span style={cellNumStyle(p.kh)}>{p.kh}</span>}</td>
+                        <td style={tdStyle}>{isEditing && isAdmin ? <NumberCell value={p.tc} onChange={v => updateField(p.model, "tc", v)} /> : <span style={cellNumStyle(p.tc)}>{p.tc}</span>}</td>
+                        <td style={tdStyle}>{isEditing && isAdmin ? <NumberCell value={p.tp} onChange={v => updateField(p.model, "tp", v)} /> : <span style={cellNumStyle(p.tp)}>{p.tp}</span>}</td>
+                      </>
+                    ) : (
+                      <td style={tdStyle}>{isEditing && isAdmin ? <NumberCell value={p[wh]} onChange={v => updateField(p.model, wh, v)} /> : <span style={cellNumStyle(p[wh])}>{p[wh]}</span>}</td>
+                    )}
+                    <td style={tdStyle}>
+                      {isEditing && isAdmin ? <NumberCell value={p.safetyStock} onChange={v => updateField(p.model, "safetyStock", v)} /> : <span style={{ fontFamily: "monospace", color: "#9CA3AF" }}>{p.safetyStock || "—"}</span>}
+                    </td>
+                    <td style={tdStyle}>{transitQty > 0 ? <span style={{ fontFamily: "monospace", color: "#0D9488", fontWeight: 600 }}>+{transitQty}</span> : <span style={{ color: "#D1D5DB" }}>—</span>}</td>
+                    <td style={tdStyle}>
+                      {isLow ? <Badge color="#DC2626" bg="#FEF2F2">低於安全水位</Badge> : <Badge color="#059669" bg="#ECFDF5">正常</Badge>}
+                    </td>
+                    {isAdmin && (
+                      <td style={tdStyle}>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          {isEditing ? (
+                            <IconButton onClick={() => setEditing(null)}>完成</IconButton>
+                          ) : (
+                            <IconButton onClick={() => setEditing(p.model)}>編輯</IconButton>
+                          )}
+                          <IconButton onClick={() => setRenameModalModel(p.model)}>改型號</IconButton>
+                          <IconButton danger onClick={() => setConfirmDeleteModel(p.model)}>刪除</IconButton>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+
+      {showAddModal && (
+        <AddProductModal
+          onClose={() => setShowAddModal(false)}
+          onAdd={(newProduct) => {
+            setProducts(prev => [...prev, newProduct]);
+            setShowAddModal(false);
+          }}
+          existingModels={products.map(p => p.model)}
+        />
+      )}
+
+      {confirmDeleteModel && (
+        <ConfirmModal
+          title="刪除型號"
+          message={`確定要刪除型號「${confirmDeleteModel}」嗎？此動作無法復原。`}
+          onConfirm={() => deleteProduct(confirmDeleteModel)}
+          onCancel={() => setConfirmDeleteModel(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function RenameModal({ oldName, existingModels, affectedOrderItems, affectedTransit, onClose, onConfirm }) {
+  const [newName, setNewName] = useState(oldName);
+  const [error, setError] = useState("");
+
+  const submit = () => {
+    const trimmed = newName.trim();
+    if (!trimmed) { setError("型號名稱不可空白"); return; }
+    if (trimmed !== oldName && existingModels.includes(trimmed)) { setError("這個型號名稱已經存在"); return; }
+    onConfirm(trimmed);
+  };
+
+  return (
+    <Modal title={`修改型號名稱 — ${oldName}`} onClose={onClose} width={420}>
+      <Field label="新的型號名稱"><TextInput value={newName} onChange={e => setNewName(e.target.value)} autoFocus /></Field>
+      {(affectedOrderItems > 0 || affectedTransit > 0) && (
+        <div style={{ fontSize: 12, color: "#92400E", background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 8, padding: "9px 12px", marginBottom: 12 }}>
+          ⚠️ 同步更新：{affectedOrderItems > 0 && `${affectedOrderItems} 筆訂單品項`}{affectedOrderItems > 0 && affectedTransit > 0 && "、"}{affectedTransit > 0 && `${affectedTransit} 筆在途記錄`} 會一併改成新名稱。
+        </div>
+      )}
+      {error && <div style={{ color: "#DC2626", fontSize: 12, marginBottom: 10 }}>{error}</div>}
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
+        <GhostButton onClick={onClose}>取消</GhostButton>
+        <PrimaryButton onClick={submit}>確認修改</PrimaryButton>
+      </div>
+    </Modal>
+  );
+}
+
+function NumberCell({ value, onChange }) {
+  return (
+    <input
+      type="number" value={value}
+      onChange={e => onChange(Number(e.target.value) || 0)}
+      style={{ width: 70, padding: "4px 6px", borderRadius: 5, border: "1px solid #2563EB", fontSize: 12.5, fontFamily: "monospace" }}
+    />
+  );
+}
+
+function cellNumStyle(val) {
+  return { fontFamily: "monospace", fontSize: 12.5, color: val < 3 ? "#DC2626" : val < 10 ? "#D97706" : "#15171C", fontWeight: val < 10 ? 700 : 400 };
+}
+
+const thStyle = { textAlign: "left", fontSize: 10.5, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.04em", padding: "8px 14px", borderBottom: "1px solid #E4E7EC", background: "#F7F8FA" };
+const tdStyle = { padding: "7px 14px", fontSize: 12.5, borderBottom: "1px solid #E4E7EC", verticalAlign: "middle" };
+
+function AddProductModal({ onClose, onAdd, existingModels }) {
+  const [model, setModel] = useState("");
+  const [category, setCategory] = useState(CATEGORIES[0]);
+  const [kh, setKh] = useState(0);
+  const [tc, setTc] = useState(0);
+  const [tp, setTp] = useState(0);
+  const [safetyStock, setSafetyStock] = useState(5);
+  const [error, setError] = useState("");
+
+  const submit = () => {
+    if (!model.trim()) { setError("請輸入型號"); return; }
+    if (existingModels.includes(model.trim())) { setError("此型號已存在"); return; }
+    onAdd({ model: model.trim(), category, kh: Number(kh) || 0, tc: Number(tc) || 0, tp: Number(tp) || 0, safetyStock: Number(safetyStock) || 0, supplier: "" });
+  };
+
+  return (
+    <Modal title="新增型號" onClose={onClose}>
+      <Field label="型號名稱"><TextInput value={model} onChange={e => setModel(e.target.value)} placeholder="例如 BD-700INV" autoFocus /></Field>
+      <Field label="分類">
+        <Select value={category} onChange={e => setCategory(e.target.value)}>
+          {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+        </Select>
+      </Field>
+      <FormGrid columns={3}>
+        <Field label="高雄倉庫存"><TextInput type="number" value={kh} onChange={e => setKh(e.target.value)} /></Field>
+        <Field label="台中倉庫存"><TextInput type="number" value={tc} onChange={e => setTc(e.target.value)} /></Field>
+        <Field label="台北倉庫存"><TextInput type="number" value={tp} onChange={e => setTp(e.target.value)} /></Field>
+      </FormGrid>
+      <Field label="安全水位（低於此數量會警示）"><TextInput type="number" value={safetyStock} onChange={e => setSafetyStock(e.target.value)} /></Field>
+      {error && <div style={{ color: "#DC2626", fontSize: 12, marginBottom: 10 }}>{error}</div>}
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
+        <GhostButton onClick={onClose}>取消</GhostButton>
+        <PrimaryButton onClick={submit}>新增型號</PrimaryButton>
+      </div>
+    </Modal>
+  );
+}
+
+// ============================================================
+// TRANSIT & UNASSIGNED PAGE
+// ============================================================
+function TransitPage({ containers, setContainers, transitItems, setTransitItems, poPending, setPoPending, unassigned, setUnassigned, isAdmin, productByModel }) {
+  const [wh, setWh] = useState("kh");
+  const [showAddTransit, setShowAddTransit] = useState(false);
+  const [editingContainerId, setEditingContainerId] = useState(null);
+  const [showAddUnassigned, setShowAddUnassigned] = useState(false);
+
+  const containersForWh = containers.filter(c => c.warehouse === wh);
+  const poForWh = poPending.filter(p => p.warehouse === wh);
+
+  const deletePo = (id) => setPoPending(prev => prev.filter(p => p.id !== id));
+  const deleteUnassigned = (id) => setUnassigned(prev => prev.filter(u => u.id !== id));
+
+  const deductUnassigned = (id, amount) => {
+    setUnassigned(prev => prev
+      .map(u => u.id === id ? { ...u, qty: Math.max(0, u.qty - amount) } : u)
+      .filter(u => u.qty > 0)
+    );
+  };
+
+  // Deleting an entire container: restore any unassigned-stock deductions
+  // made by its items, then remove the container and all its items.
+  const deleteContainer = (containerId) => {
+    const itemsInContainer = transitItems.filter(t => t.containerId === containerId);
+    const container = containers.find(c => c.id === containerId);
+    itemsInContainer.forEach(t => {
+      if (t.deductedFromUnassigned > 0) {
+        setUnassigned(prev => [...prev, {
+          id: "UN-" + Date.now() + "-" + t.id,
+          model: t.model,
+          supplier: container ? container.supplier : "",
+          qty: t.deductedFromUnassigned,
+          note: `刪除在途櫃（${container ? WH_LABELS[container.warehouse] : ""}，原預計到港 ${t.eta}）後退回`,
+        }]);
+      }
+    });
+    setTransitItems(prev => prev.filter(t => t.containerId !== containerId));
+    setContainers(prev => prev.filter(c => c.id !== containerId));
+  };
+
+  // Group items per container, sorted by container ETA (earliest first).
+  const grouped = useMemo(() => {
+    return containersForWh
+      .map(c => ({
+        container: c,
+        items: transitItems.filter(t => t.containerId === c.id).sort((a, b) => a.eta.localeCompare(b.eta)),
+      }))
+      .filter(g => g.items.length > 0)
+      .sort((a, b) => a.container.eta.localeCompare(b.container.eta));
+  }, [containersForWh, transitItems]);
+
+  const allExistingContainerNames = [...new Set(containers.map(c => c.container).filter(Boolean))];
+
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+        <GhostButton active={wh === "kh"} onClick={() => setWh("kh")}>高雄倉（{PORT_LABELS.kh}）</GhostButton>
+        <GhostButton active={wh === "tc"} onClick={() => setWh("tc")}>台中倉（{PORT_LABELS.tc}）</GhostButton>
+        <GhostButton active={wh === "tp"} onClick={() => setWh("tp")}>台北倉（{PORT_LABELS.tp}）</GhostButton>
+        <GhostButton active={wh === "unassigned"} onClick={() => setWh("unassigned")}>
+          待分配庫存{unassigned.length > 0 ? `（${unassigned.length}）` : ""}
+        </GhostButton>
+      </div>
+
+      {wh !== "unassigned" && (
+        <>
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ background: "#fff", border: "1px solid #E4E7EC", borderRadius: 12, overflow: "hidden", padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: grouped.length === 0 ? 0 : 12 }}>
+          <div style={{ fontWeight: 700, fontSize: 13 }}>在途貨（尚未到倉）— {WH_LABELS[wh]}</div>
+          {isAdmin && <PrimaryButton onClick={() => setShowAddTransit(true)}>＋ 新增在途記錄</PrimaryButton>}
+        </div>
+        {grouped.length === 0 ? (
+          <div style={{ background: "#fff", border: "1px solid #E4E7EC", borderRadius: 12, padding: "28px 16px", textAlign: "center", color: "#9CA3AF", fontSize: 12 }}>此倉庫目前沒有在途貨記錄</div>
+        ) : (
+          grouped.map(({ container, items }) => {
+            const groupQty = items.reduce((a, t) => a + t.qty, 0);
+            return (
+              <div key={container.id} style={{ background: "#fff", border: "1px solid #E4E7EC", borderRadius: 12, overflow: "hidden", marginBottom: 12 }}>
+                {/* Row 1: container number (or a "not yet filled" prompt) */}
+                <div style={{ padding: "10px 16px 4px", background: "#F0FDFA" }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: container.container ? "#0D9488" : "#D97706" }}>
+                    🚢 {container.container || "櫃號待補上"}
+                  </div>
+                  <div style={{ fontSize: 11, color: "#6B7280", marginTop: 2 }}>
+                    {items.length} 個品項，共 {groupQty} 台
+                  </div>
+                </div>
+                {/* Row 2: supplier / free time / eta */}
+                <div style={{ padding: "4px 16px 9px", background: "#F0FDFA", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 11.5, color: "#374151" }}>廠商：<b>{container.supplier}</b></span>
+                  <span style={{ fontSize: 11.5, color: "#374151" }}>FREE TIME：<b>{container.freeTime || "（尚未補上）"}</b></span>
+                  <span style={{ fontSize: 11.5, color: "#374151", fontFamily: "monospace" }}>預計到港日：<b>{container.eta}</b></span>
+                  {isAdmin && (
+                    <span style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+                      <IconButton onClick={() => setEditingContainerId(container.id)}>編輯</IconButton>
+                      <IconButton danger onClick={() => deleteContainer(container.id)}>刪除整櫃</IconButton>
+                    </span>
+                  )}
+                </div>
+                {/* Row 3+: per-model detail */}
+                <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead><tr style={{ background: "#F7F8FA" }}>
+                    <th style={thStyle}>型號</th><th style={thStyle}>數量</th>
+                  </tr></thead>
+                  <tbody>
+                    {items.map(t => (
+                      <tr key={t.id}>
+                        <td style={{ ...tdStyle, fontWeight: 700 }}>
+                          {t.model}
+                          {t.deductedFromUnassigned > 0 && (
+                            <span title={`新增時已從待分配庫存扣除 ${t.deductedFromUnassigned} 台；刪除整櫃會把這個數量退回待分配庫存`} style={{ marginLeft: 6, fontSize: 10.5, color: "#7C3AED", fontWeight: 500 }}>
+                              （扣自待分配 {t.deductedFromUnassigned}）
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ ...tdStyle, fontFamily: "monospace", color: "#0D9488", fontWeight: 700 }}>+{t.qty}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+
+      {poForWh.length > 0 && (
+        <div style={{ background: "#fff", border: "1px solid #E4E7EC", borderRadius: 12, overflow: "hidden", marginBottom: 16 }}>
+          <div style={{ padding: "12px 16px", borderBottom: "1px solid #E4E7EC", fontWeight: 700, fontSize: 13 }}>在途訂單（尚無品項明細）— {WH_LABELS[wh]}</div>
+          <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead><tr style={{ background: "#F7F8FA" }}>
+              <th style={thStyle}>訂單編號</th><th style={thStyle}>供應商</th><th style={thStyle}>預計到港</th><th style={thStyle}>備註</th>
+              {isAdmin && <th style={thStyle}>操作</th>}
+            </tr></thead>
+            <tbody>
+              {poForWh.map(p => (
+                <tr key={p.id}>
+                  <td style={{ ...tdStyle, fontFamily: "monospace" }}>{p.po}</td>
+                  <td style={tdStyle}>{p.supplier}</td>
+                  <td style={{ ...tdStyle, fontFamily: "monospace" }}>{p.eta}</td>
+                  <td style={{ ...tdStyle, color: "#9CA3AF", fontSize: 11.5 }}>{p.note}</td>
+                  {isAdmin && <td style={tdStyle}><IconButton danger onClick={() => deletePo(p.id)}>刪除</IconButton></td>}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          </div>
+        </div>
+      )}
+        </>
+      )}
+
+      {wh === "unassigned" && (
+      <div style={{ background: "#fff", border: "1px solid #E4E7EC", borderRadius: 12, overflow: "hidden" }}>
+        <div style={{ padding: "12px 16px", borderBottom: "1px solid #E4E7EC", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+          <div style={{ fontWeight: 700, fontSize: 13 }}>待分配庫存（已生產但尚未分配倉庫）</div>
+          {isAdmin && <PrimaryButton onClick={() => setShowAddUnassigned(true)}>＋ 新增待分配記錄</PrimaryButton>}
+        </div>
+        {unassigned.length === 0 ? (
+          <div style={{ padding: "28px 16px", textAlign: "center", color: "#9CA3AF", fontSize: 12 }}>
+            尚無資料。此區用於記錄工廠已完成生產、但尚未指定送往哪個倉庫的數量。
+          </div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead><tr style={{ background: "#F7F8FA" }}>
+              <th style={thStyle}>型號</th><th style={thStyle}>供應商</th><th style={thStyle}>數量</th><th style={thStyle}>備註</th>
+              {isAdmin && <th style={thStyle}>操作</th>}
+            </tr></thead>
+            <tbody>
+              {unassigned.map(u => (
+                <tr key={u.id}>
+                  <td style={{ ...tdStyle, fontWeight: 700 }}>{u.model}</td>
+                  <td style={tdStyle}>{u.supplier}</td>
+                  <td style={{ ...tdStyle, fontFamily: "monospace", color: "#7C3AED", fontWeight: 700 }}>{u.qty}</td>
+                  <td style={{ ...tdStyle, color: "#9CA3AF", fontSize: 11.5 }}>{u.note}</td>
+                  {isAdmin && <td style={tdStyle}><IconButton danger onClick={() => deleteUnassigned(u.id)}>刪除</IconButton></td>}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          </div>
+        )}
+      </div>
+      )}
+
+      {showAddTransit && (
+        <AddTransitModal
+          wh={wh}
+          onClose={() => setShowAddTransit(false)}
+          onAddContainer={(containerRec, itemRecs) => {
+            setContainers(prev => [...prev, containerRec]);
+            setTransitItems(prev => [...prev, ...itemRecs]);
+          }}
+          existingContainers={allExistingContainerNames}
+          unassigned={unassigned}
+          onDeductUnassigned={deductUnassigned}
+        />
+      )}
+      {showAddUnassigned && (
+        <AddUnassignedModal onClose={() => setShowAddUnassigned(false)} onAdd={(rec) => { setUnassigned(prev => [...prev, rec]); setShowAddUnassigned(false); }} />
+      )}
+      {editingContainerId && (
+        <EditContainerModal
+          container={containers.find(c => c.id === editingContainerId)}
+          items={transitItems.filter(t => t.containerId === editingContainerId)}
+          existingContainers={allExistingContainerNames}
+          unassigned={unassigned}
+          onDeductUnassigned={deductUnassigned}
+          onClose={() => setEditingContainerId(null)}
+          onSave={(updatedContainer, updatedItems, newItems, removedItemIds) => {
+            setContainers(prev => prev.map(c => c.id === updatedContainer.id ? updatedContainer : c));
+            setTransitItems(prev => [
+              ...prev
+                .filter(t => !removedItemIds.includes(t.id))
+                .map(t => {
+                  const match = updatedItems.find(u => u.id === t.id);
+                  return match ? match : t;
+                }),
+              ...newItems,
+            ]);
+            setEditingContainerId(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function AddTransitModal({ wh, onClose, onAddContainer, existingContainers, unassigned, onDeductUnassigned }) {
+  const [supplier, setSupplier] = useState(SUPPLIERS[0]);
+  const [container, setContainer] = useState("");
+  const [freeTime, setFreeTime] = useState("");
+  const [eta, setEta] = useState("");
+  const [items, setItems] = useState([{ model: "", qty: 0, deductFromId: "" }]);
+
+  const addRow = () => setItems(prev => [...prev, { model: "", qty: 0, deductFromId: "" }]);
+  const removeRow = (idx) => setItems(prev => prev.filter((_, i) => i !== idx));
+  const updateRow = (idx, field, value) => setItems(prev => prev.map((it, i) => {
+    if (i !== idx) return it;
+    const updated = { ...it, [field]: value };
+    if (field === "model") updated.deductFromId = ""; // reset deduction choice if model changes
+    return updated;
+  }));
+
+  const matchingUnassignedFor = (model) => (unassigned || []).filter(u => !model.trim() || u.model === model.trim());
+
+  const submit = () => {
+    const validItems = items.filter(it => it.model.trim() && eta);
+    if (validItems.length === 0) return;
+
+    const containerId = "CT-" + Date.now();
+    const containerRec = { id: containerId, warehouse: wh, supplier, container: container.trim(), freeTime: freeTime.trim(), eta };
+
+    const itemRecs = validItems.map((it, i) => {
+      const finalQty = Number(it.qty) || 0;
+      const deducted = it.deductFromId ? finalQty : 0;
+      if (it.deductFromId) onDeductUnassigned(it.deductFromId, finalQty);
+      return { id: "IT-" + Date.now() + "-" + i, containerId, model: it.model.trim(), qty: finalQty, eta, deductedFromUnassigned: deducted };
+    });
+
+    onAddContainer(containerRec, itemRecs);
+    onClose();
+  };
+
+  return (
+    <Modal title={`新增在途記錄 — ${WH_LABELS[wh]}`} onClose={onClose} width={620}>
+      <div style={{ fontSize: 11.5, color: "#9CA3AF", marginBottom: 12 }}>
+        一櫃對應一個廠商，可以一次新增這一櫃裡面的多個型號。
+      </div>
+      <FormGrid columns={2}>
+        <Field label="廠商">
+          <Select value={supplier} onChange={e => setSupplier(e.target.value)}>{SUPPLIERS.map(s => <option key={s} value={s}>{s}</option>)}</Select>
+        </Field>
+        <Field label="預計到港日（共用）"><TextInput type="date" value={eta} onChange={e => setEta(e.target.value)} /></Field>
+        <Field label="櫃號 / 船班（選填，等到貨通知書來了再補上也可以）">
+          <TextInput list="container-options" value={container} onChange={e => setContainer(e.target.value)} placeholder="例如 6/10 日照大船（高雄）" />
+          <datalist id="container-options">{(existingContainers || []).map(c => <option key={c} value={c} />)}</datalist>
+        </Field>
+        <Field label="FREE TIME（選填，例如 10+10）">
+          <TextInput value={freeTime} onChange={e => setFreeTime(e.target.value)} placeholder="例如 10+10、7+3" />
+        </Field>
+      </FormGrid>
+
+      <div style={{ marginTop: 14, marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ fontSize: 12.5, fontWeight: 700 }}>此櫃內的型號</div>
+        <IconButton onClick={addRow}>＋ 新增一筆型號</IconButton>
+      </div>
+
+      {items.map((it, idx) => {
+        const matchingUnassigned = matchingUnassignedFor(it.model);
+        const selectedUnassigned = matchingUnassigned.find(u => u.id === it.deductFromId);
+        return (
+          <div key={idx} style={{ border: "1px solid #E4E7EC", borderRadius: 8, padding: 12, marginBottom: 10, background: "#FAFBFC" }}>
+            <div style={{ display: "flex", gap: 6, marginBottom: 8, alignItems: "center" }}>
+              <TextInput value={it.model} onChange={e => updateRow(idx, "model", e.target.value)} placeholder="型號，例如 BD-106INV" style={{ flex: 2 }} />
+              <TextInput type="number" value={it.qty} onChange={e => updateRow(idx, "qty", e.target.value)} placeholder="數量" style={{ flex: 1 }} />
+              {items.length > 1 && (
+                <button type="button" onClick={() => removeRow(idx)} style={{ border: "none", background: "none", color: "#DC2626", cursor: "pointer", fontSize: 16, padding: "0 4px" }}>×</button>
+              )}
+            </div>
+            {matchingUnassigned.length > 0 && (
+              <div>
+                <Select value={it.deductFromId} onChange={e => updateRow(idx, "deductFromId", e.target.value)} style={{ fontSize: 11.5 }}>
+                  <option value="">不從待分配庫存扣除</option>
+                  {matchingUnassigned.map(u => (
+                    <option key={u.id} value={u.id}>從待分配扣除：{u.model}　目前 {u.qty} 台　({u.supplier})</option>
+                  ))}
+                </Select>
+                {selectedUnassigned && (Number(it.qty) || 0) > selectedUnassigned.qty && (
+                  <div style={{ fontSize: 10.5, color: "#DC2626", marginTop: 4 }}>注意：扣除數量超過待分配庫存，最多只會扣到 0。</div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
+        <GhostButton onClick={onClose}>取消</GhostButton>
+        <PrimaryButton onClick={submit}>新增</PrimaryButton>
+      </div>
+    </Modal>
+  );
+}
+
+function EditContainerModal({ container, items, existingContainers, unassigned, onDeductUnassigned, onClose, onSave }) {
+  const [supplier, setSupplier] = useState(container.supplier);
+  const [containerNo, setContainerNo] = useState(container.container || "");
+  const [freeTime, setFreeTime] = useState(container.freeTime || "");
+  const [eta, setEta] = useState(container.eta);
+  // rows carry either an existing item's id (isNew: false) or are brand new (isNew: true)
+  const [rows, setRows] = useState(items.map(it => ({ ...it, isNew: false, deductFromId: "" })));
+
+  const addRow = () => setRows(prev => [...prev, { id: "IT-" + Date.now() + "-" + prev.length, model: "", qty: 0, eta, deductedFromUnassigned: 0, isNew: true, deductFromId: "" }]);
+  const removeRow = (idx) => setRows(prev => prev.filter((_, i) => i !== idx));
+  const updateRow = (idx, field, value) => setRows(prev => prev.map((r, i) => i === idx ? { ...r, [field]: value } : r));
+
+  const matchingUnassignedFor = (model) => (unassigned || []).filter(u => !model.trim() || u.model === model.trim());
+
+  const submit = () => {
+    const validRows = rows.filter(r => r.model.trim());
+    const updatedContainer = { ...container, supplier, container: containerNo.trim(), freeTime: freeTime.trim(), eta };
+
+    const removedItemIds = items.filter(orig => !validRows.find(r => r.id === orig.id)).map(orig => orig.id);
+
+    const updatedExistingItems = [];
+    const newItemRecords = [];
+    validRows.forEach(r => {
+      const finalQty = Number(r.qty) || 0;
+      if (r.isNew) {
+        const deducted = r.deductFromId ? finalQty : 0;
+        if (r.deductFromId) onDeductUnassigned(r.deductFromId, finalQty);
+        newItemRecords.push({ id: r.id, containerId: container.id, model: r.model.trim(), qty: finalQty, eta, deductedFromUnassigned: deducted });
+      } else {
+        updatedExistingItems.push({ id: r.id, containerId: container.id, model: r.model.trim(), qty: finalQty, eta, deductedFromUnassigned: r.deductedFromUnassigned || 0 });
+      }
+    });
+
+    onSave(updatedContainer, updatedExistingItems, newItemRecords, removedItemIds);
+  };
+
+  return (
+    <Modal title="編輯在途櫃" onClose={onClose} width={640}>
+      <FormGrid columns={2}>
+        <Field label="廠商">
+          <Select value={supplier} onChange={e => setSupplier(e.target.value)}>{SUPPLIERS.map(s => <option key={s} value={s}>{s}</option>)}</Select>
+        </Field>
+        <Field label="預計到港日（共用，會套用到下方所有新增的型號）">
+          <TextInput type="date" value={eta} onChange={e => setEta(e.target.value)} />
+        </Field>
+        <Field label="櫃號 / 船班">
+          <TextInput list="container-options-edit" value={containerNo} onChange={e => setContainerNo(e.target.value)} placeholder="例如 6/10 日照大船（高雄）" />
+          <datalist id="container-options-edit">{(existingContainers || []).map(c => <option key={c} value={c} />)}</datalist>
+        </Field>
+        <Field label="FREE TIME（例如 10+10）">
+          <TextInput value={freeTime} onChange={e => setFreeTime(e.target.value)} placeholder="例如 10+10、7+3" />
+        </Field>
+      </FormGrid>
+
+      <div style={{ marginTop: 14, marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ fontSize: 12.5, fontWeight: 700 }}>此櫃內的型號</div>
+        <IconButton onClick={addRow}>＋ 新增一筆型號</IconButton>
+      </div>
+
+      {rows.map((r, idx) => {
+        const matchingUnassigned = r.isNew ? matchingUnassignedFor(r.model) : [];
+        const selectedUnassigned = matchingUnassigned.find(u => u.id === r.deductFromId);
+        return (
+          <div key={r.id} style={{ border: "1px solid #E4E7EC", borderRadius: 8, padding: 12, marginBottom: 10, background: "#FAFBFC" }}>
+            <div style={{ display: "flex", gap: 6, marginBottom: 8, alignItems: "center" }}>
+              <TextInput value={r.model} onChange={e => updateRow(idx, "model", e.target.value)} placeholder="型號" style={{ flex: 2 }} />
+              <TextInput type="number" value={r.qty} onChange={e => updateRow(idx, "qty", e.target.value)} placeholder="數量" style={{ flex: 1 }} />
+              <button type="button" onClick={() => removeRow(idx)} style={{ border: "none", background: "none", color: "#DC2626", cursor: "pointer", fontSize: 16, padding: "0 4px" }}>×</button>
+            </div>
+            {r.isNew && r.deductedFromUnassigned === 0 && matchingUnassigned.length > 0 && (
+              <div>
+                <Select value={r.deductFromId} onChange={e => updateRow(idx, "deductFromId", e.target.value)} style={{ fontSize: 11.5 }}>
+                  <option value="">不從待分配庫存扣除</option>
+                  {matchingUnassigned.map(u => (
+                    <option key={u.id} value={u.id}>從待分配扣除：{u.model}　目前 {u.qty} 台　({u.supplier})</option>
+                  ))}
+                </Select>
+                {selectedUnassigned && (Number(r.qty) || 0) > selectedUnassigned.qty && (
+                  <div style={{ fontSize: 10.5, color: "#DC2626", marginTop: 4 }}>注意：扣除數量超過待分配庫存，最多只會扣到 0。</div>
+                )}
+              </div>
+            )}
+            {!r.isNew && r.deductedFromUnassigned > 0 && (
+              <div style={{ fontSize: 10.5, color: "#7C3AED" }}>此筆原本已從待分配庫存扣除 {r.deductedFromUnassigned} 台；如果整筆刪除，這個數量會在儲存後退回待分配庫存。</div>
+            )}
+          </div>
+        );
+      })}
+
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
+        <GhostButton onClick={onClose}>取消</GhostButton>
+        <PrimaryButton onClick={submit}>儲存修改</PrimaryButton>
+      </div>
+    </Modal>
+  );
+}
+
+function AddUnassignedModal({ onClose, onAdd }) {
+  const [model, setModel] = useState("");
+  const [supplier, setSupplier] = useState(SUPPLIERS[0]);
+  const [qty, setQty] = useState(0);
+  const [note, setNote] = useState("");
+
+  const submit = () => {
+    if (!model.trim()) return;
+    onAdd({ id: "UN-" + Date.now(), model: model.trim(), supplier, qty: Number(qty) || 0, note });
+  };
+
+  return (
+    <Modal title="新增待分配記錄" onClose={onClose}>
+      <Field label="型號"><TextInput value={model} onChange={e => setModel(e.target.value)} autoFocus /></Field>
+      <Field label="供應商"><Select value={supplier} onChange={e => setSupplier(e.target.value)}>{SUPPLIERS.map(s => <option key={s} value={s}>{s}</option>)}</Select></Field>
+      <Field label="數量"><TextInput type="number" value={qty} onChange={e => setQty(e.target.value)} /></Field>
+      <Field label="備註"><TextInput value={note} onChange={e => setNote(e.target.value)} placeholder="例如：尚未決定送往哪個倉庫" /></Field>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
+        <GhostButton onClick={onClose}>取消</GhostButton>
+        <PrimaryButton onClick={submit}>新增</PrimaryButton>
+      </div>
+    </Modal>
+  );
+}
+
+// ============================================================
+// ORDERS PAGE
+// ============================================================
+function OrdersPage({ orders, setOrders, isAdmin, products, onTransferItem, onConfirmShipment }) {
+  const { isMobile } = useViewport();
+  const [supplierFilter, setSupplierFilter] = useState("all");
+  const [expandedId, setExpandedId] = useState(null);
+  const [showAddOrder, setShowAddOrder] = useState(false);
+  const [editingOrder, setEditingOrder] = useState(null);
+
+  const filtered = supplierFilter === "all" ? orders : orders.filter(o => o.supplier === supplierFilter);
+
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [confirmShipOrderId, setConfirmShipOrderId] = useState(null);
+
+  const deleteOrder = (id) => {
+    setOrders(prev => prev.filter(o => o.id !== id));
+    setConfirmDeleteId(null);
+  };
+
+  const updateStatus = (id, status) => {
+    setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
+  };
+
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center", flexWrap: "wrap" }}>
+        <div onClick={() => setSupplierFilter("all")} style={{
+          padding: "5px 13px", borderRadius: 20, fontSize: 11.5, fontWeight: 500, cursor: "pointer",
+          border: "1px solid " + (supplierFilter === "all" ? "#15171C" : "#E4E7EC"),
+          background: supplierFilter === "all" ? "#15171C" : "#fff", color: supplierFilter === "all" ? "#fff" : "#6B7280",
+        }}>全部供應商 ({orders.length})</div>
+        {SUPPLIERS.map(s => {
+          const count = orders.filter(o => o.supplier === s).length;
+          if (count === 0) return null;
+          const active = supplierFilter === s;
+          return (
+            <div key={s} onClick={() => setSupplierFilter(s)} style={{
+              padding: "5px 13px", borderRadius: 20, fontSize: 11.5, fontWeight: 500, cursor: "pointer",
+              border: "1px solid " + (active ? "#2563EB" : "#E4E7EC"),
+              background: active ? "#2563EB" : "#fff", color: active ? "#fff" : "#6B7280",
+            }}>{s} ({count})</div>
+          );
+        })}
+        <div style={{ flex: 1 }} />
+        {isAdmin && <PrimaryButton onClick={() => setShowAddOrder(true)}>＋ 新增訂單</PrimaryButton>}
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {filtered.map(o => {
+          const sc = STATUS_COLORS[o.status] || { c: "#6B7280", bg: "#F7F8FA" };
+          const expanded = expandedId === o.id;
+          const itemTotal = o.items.reduce((a, it) => a + (it.qty || 0), 0);
+          return (
+            <div key={o.id} style={{ background: "#fff", border: "1px solid #E4E7EC", borderRadius: 10, overflow: "hidden" }}>
+              <div
+                style={{ padding: isMobile ? "12px 14px" : "12px 16px", display: "flex", alignItems: "center", gap: isMobile ? 8 : 12, cursor: "pointer", flexWrap: "wrap" }}
+                onClick={() => setExpandedId(expanded ? null : o.id)}
+              >
+                <div style={{ fontFamily: "monospace", fontWeight: 700, color: "#2563EB", fontSize: 12.5, minWidth: isMobile ? "auto" : 130 }}>{o.id}</div>
+                <Badge color={catColor(o.supplier)} bg={catColor(o.supplier) + "1A"}>{o.supplier}</Badge>
+                {!isMobile && <div style={{ fontSize: 11.5, color: "#9CA3AF", fontFamily: "monospace" }}>{o.orderDate || "—"}</div>}
+                {!isMobile && <Badge color={o.shipMode === "分批出貨" ? "#0D9488" : "#6B7280"} bg={o.shipMode === "分批出貨" ? "#F0FDFA" : "#F7F8FA"}>{o.shipMode}</Badge>}
+                {!isMobile && <div style={{ fontSize: 11.5, color: "#6B7280" }}>{o.items.length > 0 ? `${o.items.length} 個品項，共 ${itemTotal} 台` : "無品項明細"}</div>}
+                {o.totalAmount != null && (
+                  <div style={{ fontSize: 11.5, fontFamily: "monospace", fontWeight: 700, color: "#15171C" }}>{o.currency} {o.totalAmount.toLocaleString()}</div>
+                )}
+                {o.fileUrl && <span title="已附 PO 文件連結" style={{ fontSize: 13 }}>📎</span>}
+                <div style={{ flexGrow: 1, minWidth: isMobile ? "100%" : 8, height: isMobile ? 0 : "auto" }} />
+                {isAdmin ? (
+                  <Select value={o.status} onChange={e => { e.stopPropagation(); updateStatus(o.id, e.target.value); }} onClick={e => e.stopPropagation()} style={{ width: isMobile ? "auto" : 110, padding: "4px 8px", fontSize: 11.5 }}>
+                    {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                  </Select>
+                ) : (
+                  <Badge color={sc.c} bg={sc.bg}>{o.status}</Badge>
+                )}
+                {isMobile && (
+                  <div style={{ fontSize: 11, color: "#9CA3AF", display: "flex", gap: 8, alignItems: "center" }}>
+                    <span style={{ fontFamily: "monospace" }}>{o.orderDate || "—"}</span>
+                    <span>{o.items.length > 0 ? `${o.items.length} 項，共 ${itemTotal} 台` : "無品項明細"}</span>
+                  </div>
+                )}
+                <span style={{ fontSize: 12, color: "#9CA3AF", marginLeft: isMobile ? "auto" : 0 }}>{expanded ? "▲" : "▼"}</span>
+              </div>
+              {expanded && (
+                <div style={{ borderTop: "1px solid #E4E7EC", padding: "12px 16px", background: "#FAFBFC" }}>
+                  {o.items.length === 0 ? (
+                    <div style={{ fontSize: 12, color: "#9CA3AF", padding: "8px 0" }}>{o.note || "此訂單尚無品項明細"}</div>
+                  ) : (
+                    <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 10 }}>
+                      <thead><tr>
+                        <th style={{ ...thStyle, background: "transparent" }}>品名</th>
+                        <th style={{ ...thStyle, background: "transparent" }}>數量</th>
+                        <th style={{ ...thStyle, background: "transparent" }}>預計生產日期</th>
+                        <th style={{ ...thStyle, background: "transparent" }}>狀態</th>
+                      </tr></thead>
+                      <tbody>
+                        {o.items.map((it, idx) => (
+                          <tr key={idx}>
+                            <td style={{ ...tdStyle, fontWeight: 600 }}>{it.model}</td>
+                            <td style={{ ...tdStyle, fontFamily: "monospace" }}>{it.qty}</td>
+                            <td style={{ ...tdStyle, color: it.eta ? "#15171C" : "#D1D5DB", fontFamily: it.eta ? "monospace" : "inherit" }}>{it.eta || "—"}</td>
+                            <td style={tdStyle}>
+                              {it.transferred ? (
+                                <Badge color="#059669" bg="#ECFDF5">已轉入待分配</Badge>
+                              ) : isAdmin ? (
+                                <IconButton onClick={() => onTransferItem(o.id, idx)}>轉入待分配</IconButton>
+                              ) : (
+                                <span style={{ color: "#D1D5DB", fontSize: 11.5 }}>—</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    </div>
+                  )}
+                  {o.totalAmount != null && (
+                    <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 8 }}>訂單總金額：<span style={{ fontFamily: "monospace", color: "#15171C" }}>{o.currency} {o.totalAmount.toLocaleString()}</span></div>
+                  )}
+                  {o.shipMode === "整批出貨" && (
+                    <div style={{ fontSize: 12, marginBottom: 8, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <span style={{ color: "#6B7280" }}>目的港／目的倉庫：</span>
+                      {o.destinationWarehouse ? (
+                        <Badge color="#2563EB" bg="#EFF6FF">{WH_LABELS[o.destinationWarehouse]}（{PORT_LABELS[o.destinationWarehouse]}）</Badge>
+                      ) : (
+                        <span style={{ color: "#D1D5DB" }}>尚未確定</span>
+                      )}
+                      {isAdmin && o.destinationWarehouse && !o.shipped && o.items.length > 0 && (
+                        <PrimaryButton onClick={() => setConfirmShipOrderId(o.id)}>✓ 確認出貨</PrimaryButton>
+                      )}
+                      {o.shipped && <Badge color="#059669" bg="#ECFDF5">已確認出貨，已轉入在途資料</Badge>}
+                    </div>
+                  )}
+                  {o.note && <div style={{ fontSize: 11.5, color: "#9CA3AF", marginBottom: 10 }}>備註：{o.note}</div>}
+                  {o.fileUrl && (
+                    <div style={{ marginBottom: 10 }}>
+                      <a href={o.fileUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: "#2563EB", fontWeight: 600, textDecoration: "none" }}>
+                        📎 開啟 PO 文件連結 →
+                      </a>
+                    </div>
+                  )}
+                  {isAdmin && (
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <IconButton onClick={() => setEditingOrder(o)}>編輯訂單</IconButton>
+                      <IconButton danger onClick={() => setConfirmDeleteId(o.id)}>刪除訂單</IconButton>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {showAddOrder && (
+        <OrderFormModal
+          title="新增訂單"
+          onClose={() => setShowAddOrder(false)}
+          onSave={(order) => { setOrders(prev => [order, ...prev]); setShowAddOrder(false); }}
+          products={products}
+        />
+      )}
+      {editingOrder && (
+        <OrderFormModal
+          title={`編輯訂單 — ${editingOrder.id}`}
+          initial={editingOrder}
+          onClose={() => setEditingOrder(null)}
+          onSave={(order) => { setOrders(prev => prev.map(o => o.id === editingOrder.id ? order : o)); setEditingOrder(null); }}
+          products={products}
+        />
+      )}
+
+      {confirmDeleteId && (
+        <ConfirmModal
+          title="刪除訂單"
+          message={`確定要刪除訂單「${confirmDeleteId}」嗎？此動作無法復原。`}
+          onConfirm={() => deleteOrder(confirmDeleteId)}
+          onCancel={() => setConfirmDeleteId(null)}
+        />
+      )}
+      {confirmShipOrderId && (
+        <ConfirmShipmentModal
+          order={orders.find(o => o.id === confirmShipOrderId)}
+          onClose={() => setConfirmShipOrderId(null)}
+          onConfirm={(eta) => { onConfirmShipment(confirmShipOrderId, eta); setConfirmShipOrderId(null); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function ConfirmShipmentModal({ order, onClose, onConfirm }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const [eta, setEta] = useState(order?.items?.[0]?.eta || today);
+  const itemTotal = (order?.items || []).reduce((a, it) => a + (it.qty || 0), 0);
+
+  if (!order) return null;
+
+  return (
+    <Modal title="確認出貨" onClose={onClose} width={460}>
+      <div style={{ fontSize: 12.5, color: "#374151", marginBottom: 14 }}>
+        將把訂單 <b>{order.id}</b>（{order.supplier}）的全部 {order.items.length} 個品項、共 {itemTotal} 台，整批轉入 <b>{WH_LABELS[order.destinationWarehouse]}</b> 的在途資料，並建立一筆新的在途櫃。
+      </div>
+      <Field label="預計到港日">
+        <TextInput type="date" value={eta} onChange={e => setEta(e.target.value)} />
+      </Field>
+      <div style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 14 }}>
+        確認後，這筆訂單的狀態會自動更新為「海運中」，且無法再次確認出貨（如需修改，請到「在途與待分配」頁編輯該櫃資料）。
+      </div>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+        <GhostButton onClick={onClose}>取消</GhostButton>
+        <PrimaryButton onClick={() => onConfirm(eta)}>確認出貨並轉入在途</PrimaryButton>
+      </div>
+    </Modal>
+  );
+}
+
+function OrderFormModal({ title, initial, onClose, onSave, products }) {
+  const { isMobile } = useViewport();
+  const [id, setId] = useState(initial?.id || "");
+  const [totalAmount, setTotalAmount] = useState(initial?.totalAmount ?? "");
+  const [supplier, setSupplier] = useState(initial?.supplier || SUPPLIERS[0]);
+  const [orderDate, setOrderDate] = useState(initial?.orderDate || "");
+  const [currency, setCurrency] = useState(initial?.currency || "USD");
+  const [status, setStatus] = useState(initial?.status || STATUSES[0]);
+  const [shipMode, setShipMode] = useState(initial?.shipMode || "整批出貨");
+  const [destinationWarehouse, setDestinationWarehouse] = useState(initial?.destinationWarehouse || "");
+  const [note, setNote] = useState(initial?.note || "");
+  const [fileUrl, setFileUrl] = useState(initial?.fileUrl || "");
+  const [items, setItems] = useState(initial?.items || []);
+  const [error, setError] = useState("");
+
+  const addItem = () => setItems(prev => [...prev, { model: "", qty: 0, eta: "" }]);
+  const updateItem = (idx, field, value) => setItems(prev => prev.map((it, i) => i === idx ? { ...it, [field]: value } : it));
+  const removeItem = (idx) => setItems(prev => prev.filter((_, i) => i !== idx));
+
+  const submit = () => {
+    if (!id.trim()) { setError("請輸入訂單編號"); return; }
+    onSave({
+      id: id.trim(), supplier, orderDate: orderDate || null, currency, status, shipMode, note, fileUrl: fileUrl.trim(),
+      totalAmount: totalAmount === "" ? null : Number(totalAmount),
+      destinationWarehouse: shipMode === "整批出貨" ? (destinationWarehouse || null) : null,
+      year: orderDate ? Number(orderDate.slice(0, 4)) : 2026,
+      items: items.filter(it => it.model.trim()).map(it => ({ model: it.model.trim(), qty: Number(it.qty) || 0, eta: (it.eta || "").trim() })),
+    });
+  };
+
+  return (
+    <Modal title={title} onClose={onClose} width={560}>
+      <FormGrid columns={2}>
+        <Field label="訂單編號"><TextInput value={id} onChange={e => setId(e.target.value)} disabled={!!initial} style={initial ? { background: "#F7F8FA", color: "#9CA3AF" } : {}} /></Field>
+        <Field label="供應商"><Select value={supplier} onChange={e => setSupplier(e.target.value)}>{SUPPLIERS.map(s => <option key={s} value={s}>{s}</option>)}</Select></Field>
+        <Field label="下單日期"><TextInput type="date" value={orderDate} onChange={e => setOrderDate(e.target.value)} /></Field>
+        <Field label="幣別"><Select value={currency} onChange={e => setCurrency(e.target.value)}><option value="USD">USD</option><option value="EUR">EUR</option></Select></Field>
+        <Field label="狀態"><Select value={status} onChange={e => setStatus(e.target.value)}>{STATUSES.map(s => <option key={s} value={s}>{s}</option>)}</Select></Field>
+        <Field label="出貨方式"><Select value={shipMode} onChange={e => setShipMode(e.target.value)}><option value="整批出貨">整批出貨</option><option value="分批出貨">分批出貨</option></Select></Field>
+        {shipMode === "整批出貨" && (
+          <Field label="目的港 / 目的倉庫（選填）">
+            <Select value={destinationWarehouse} onChange={e => setDestinationWarehouse(e.target.value)}>
+              <option value="">尚未確定</option>
+              <option value="kh">高雄倉（{PORT_LABELS.kh}）</option>
+              <option value="tc">台中倉（{PORT_LABELS.tc}）</option>
+              <option value="tp">台北倉（{PORT_LABELS.tp}）</option>
+            </Select>
+          </Field>
+        )}
+        <Field label="訂單總金額（選填）"><TextInput type="number" value={totalAmount} onChange={e => setTotalAmount(e.target.value)} placeholder="例如 25000" /></Field>
+      </FormGrid>
+      <Field label="備註"><TextInput value={note} onChange={e => setNote(e.target.value)} /></Field>
+      <Field label="PO 文件連結（選填，貼 Google Drive 或雲端硬碟分享連結）">
+        <TextInput value={fileUrl} onChange={e => setFileUrl(e.target.value)} placeholder="https://drive.google.com/..." />
+      </Field>
+
+      <div style={{ marginTop: 14, marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ fontSize: 12.5, fontWeight: 700 }}>訂單品項</div>
+        <IconButton onClick={addItem}>＋ 新增品項</IconButton>
+      </div>
+      {items.length === 0 && <div style={{ fontSize: 11.5, color: "#9CA3AF", marginBottom: 8 }}>尚無品項，可以先存檔之後再補</div>}
+      {items.length > 0 && !isMobile && (
+        <div style={{ display: "flex", gap: 6, marginBottom: 4, fontSize: 10.5, color: "#9CA3AF", fontWeight: 600 }}>
+          <div style={{ flex: 2 }}>型號</div>
+          <div style={{ flex: 1 }}>數量</div>
+          <div style={{ flex: 1.3 }}>預計生產日期</div>
+          <div style={{ width: 16 }} />
+        </div>
+      )}
+      {items.map((it, idx) => (
+        isMobile ? (
+          <div key={idx} style={{ border: "1px solid #E4E7EC", borderRadius: 8, padding: 10, marginBottom: 8, background: "#FAFBFC" }}>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4 }}>
+              <button type="button" onClick={() => removeItem(idx)} style={{ border: "none", background: "none", color: "#DC2626", cursor: "pointer", fontSize: 16, padding: "0 4px" }}>移除 ×</button>
+            </div>
+            <Field label="型號"><TextInput list="model-options" value={it.model} onChange={e => updateItem(idx, "model", e.target.value)} placeholder="型號" /></Field>
+            <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ flex: 1 }}><Field label="數量"><TextInput type="number" value={it.qty} onChange={e => updateItem(idx, "qty", e.target.value)} placeholder="數量" /></Field></div>
+              <div style={{ flex: 1.3 }}><Field label="預計生產日期"><TextInput type="date" value={it.eta || ""} onChange={e => updateItem(idx, "eta", e.target.value)} /></Field></div>
+            </div>
+          </div>
+        ) : (
+          <div key={idx} style={{ display: "flex", gap: 6, marginBottom: 6, alignItems: "center" }}>
+            <TextInput list="model-options" value={it.model} onChange={e => updateItem(idx, "model", e.target.value)} placeholder="型號" style={{ flex: 2 }} />
+            <TextInput type="number" value={it.qty} onChange={e => updateItem(idx, "qty", e.target.value)} placeholder="數量" style={{ flex: 1 }} />
+            <TextInput type="date" value={it.eta || ""} onChange={e => updateItem(idx, "eta", e.target.value)} style={{ flex: 1.3 }} />
+            <button type="button" onClick={() => removeItem(idx)} style={{ border: "none", background: "none", color: "#DC2626", cursor: "pointer", fontSize: 16, padding: "0 4px" }}>×</button>
+          </div>
+        )
+      ))}
+      <datalist id="model-options">{products.map(p => <option key={p.model} value={p.model} />)}</datalist>
+
+      {error && <div style={{ color: "#DC2626", fontSize: 12, marginTop: 8 }}>{error}</div>}
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16 }}>
+        <GhostButton onClick={onClose}>取消</GhostButton>
+        <PrimaryButton onClick={submit}>儲存訂單</PrimaryButton>
+      </div>
+    </Modal>
+  );
+}
+
+// ============================================================
+// REORDER PAGE
+// ============================================================
+function ReorderPage({ products, transitItems }) {
+  const transitByModel = useMemo(() => {
+    const m = {};
+    transitItems.forEach(t => { m[t.model] = (m[t.model] || 0) + t.qty; });
+    return m;
+  }, [transitItems]);
+
+  const lowItems = useMemo(() => {
+    return products
+      .filter(p => p.safetyStock > 0 && (p.kh + p.tc + p.tp) < p.safetyStock)
+      .map(p => ({ ...p, total: p.kh + p.tc + p.tp, gap: p.safetyStock - (p.kh + p.tc + p.tp) }))
+      .sort((a, b) => b.gap - a.gap);
+  }, [products]);
+
+  const noSafetySet = products.filter(p => !p.safetyStock).length;
+
+  return (
+    <div>
+      <div style={{
+        background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 10, padding: "11px 16px",
+        display: "flex", alignItems: "center", gap: 10, marginBottom: 16,
+      }}>
+        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#DC2626", flexShrink: 0 }} />
+        <div style={{ fontSize: 12.5, color: "#991B1B" }}>
+          以下 {lowItems.length} 項型號的台灣三倉合計低於設定的安全水位，建議評估補貨（前置期 2–4 個月）。下訂前請先確認「在途」欄是否已有貨在路上。
+        </div>
+      </div>
+
+      {noSafetySet > 0 && (
+        <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: "10px 16px", marginBottom: 16, fontSize: 12, color: "#92400E" }}>
+          💡 還有 {noSafetySet} 項型號尚未設定安全水位，無法判斷是否需要補貨。請至「安全水位設定」頁逐一設定。
+        </div>
+      )}
+
+      <div style={{ background: "#fff", border: "1px solid #E4E7EC", borderRadius: 12, overflow: "hidden" }}>
+        <div style={{ padding: "12px 16px", borderBottom: "1px solid #E4E7EC", fontWeight: 700, fontSize: 13 }}>補貨建議清單</div>
+        {lowItems.length === 0 ? (
+          <div style={{ padding: "32px 16px", textAlign: "center", color: "#9CA3AF", fontSize: 12.5 }}>目前沒有低於安全水位的型號 🎉</div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead><tr style={{ background: "#F7F8FA" }}>
+              <th style={thStyle}>型號</th><th style={thStyle}>分類</th><th style={thStyle}>高雄</th><th style={thStyle}>台中</th>
+              <th style={thStyle}>台北</th><th style={thStyle}>台灣合計</th><th style={thStyle}>安全水位</th><th style={thStyle}>缺口</th><th style={thStyle}>在途</th>
+            </tr></thead>
+            <tbody>
+              {lowItems.map(p => {
+                const transitQty = transitByModel[p.model] || 0;
+                const urgent = p.total < p.safetyStock * 0.3;
+                return (
+                  <tr key={p.model} style={{ background: urgent ? "#FFF5F5" : "transparent" }}>
+                    <td style={{ ...tdStyle, fontWeight: 700 }}>{p.model}</td>
+                    <td style={tdStyle}><Badge color={catColor(p.category)} bg={catColor(p.category) + "1A"}>{p.category}</Badge></td>
+                    <td style={{ ...tdStyle, fontFamily: "monospace" }}>{p.kh}</td>
+                    <td style={{ ...tdStyle, fontFamily: "monospace" }}>{p.tc}</td>
+                    <td style={{ ...tdStyle, fontFamily: "monospace" }}>{p.tp}</td>
+                    <td style={{ ...tdStyle, fontFamily: "monospace", fontWeight: 700, color: urgent ? "#DC2626" : "#D97706" }}>{p.total}</td>
+                    <td style={{ ...tdStyle, fontFamily: "monospace", color: "#9CA3AF" }}>{p.safetyStock}</td>
+                    <td style={{ ...tdStyle, fontFamily: "monospace", color: "#DC2626", fontWeight: 700 }}>−{p.gap}</td>
+                    <td style={tdStyle}>{transitQty > 0 ? <Badge color="#0D9488" bg="#F0FDFA">已有 +{transitQty} 在途</Badge> : <Badge color="#9CA3AF" bg="#F7F8FA">無在途</Badge>}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// SETTINGS PAGE (Safety Stock)
+// ============================================================
+// Surfaces what the Google Sheets backend actually does in the current
+// environment, so storage discrepancies between the Claude conversation and
+// a published link can be diagnosed from real evidence instead of guesswork.
+function StorageDiagnostics() {
+  const [report, setReport] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      const lines = [];
+      lines.push(`Apps Script API 網址：${SHEETS_API_URL}`);
+
+      try {
+        const raw = await sheetsGet("products");
+        const parsed = raw ? JSON.parse(raw) : null;
+        lines.push(`讀取測試（products 分頁）：成功，${parsed ? `讀到 ${parsed.length} 筆型號` : "目前是空的（尚未寫入任何資料）"}`);
+      } catch (e) {
+        lines.push(`讀取測試（products 分頁）：失敗，錯誤＝${e && e.message ? e.message : String(e)}`);
+      }
+
+      lines.push(`目前管理者密碼（用於寫入測試）：${currentAdminPassword}`);
+      lines.push(`提示：若要測試寫入是否正常，請直接到「安全水位設定」頁修改任一型號的安全水位，重新整理頁面後確認數字是否保留。`);
+
+      setReport(lines.join("\n"));
+    })();
+  }, []);
+
+  return (
+    <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: "12px 16px", marginBottom: 16 }}>
+      <div style={{ fontSize: 12.5, fontWeight: 700, color: "#92400E", marginBottom: 8 }}>儲存系統診斷（除錯用，問題排查完可移除）</div>
+      <pre style={{ fontSize: 11, color: "#78350F", whiteSpace: "pre-wrap", fontFamily: "monospace", margin: 0 }}>
+        {report || "正在檢測中..."}
+      </pre>
+    </div>
+  );
+}
+
+function SettingsPage({ products, setProducts, isAdmin, adminPassword, setAdminPassword }) {
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("all");
+  const [showPwModal, setShowPwModal] = useState(false);
+
+  const filtered = useMemo(() => {
+    let data = products.filter(p => p.model.toLowerCase().includes(search.toLowerCase()));
+    if (category !== "all") data = data.filter(p => p.category === category);
+    return data;
+  }, [products, category, search]);
+
+  const updateSafety = (model, value) => {
+    setProducts(prev => prev.map(p => p.model === model ? { ...p, safetyStock: value } : p));
+  };
+
+  if (!isAdmin) {
+    return (
+      <div style={{ background: "#fff", border: "1px solid #E4E7EC", borderRadius: 12, padding: "40px 20px", textAlign: "center", color: "#9CA3AF" }}>
+        僅檢視模式無法修改安全水位設定，請切換到「管理者」模式。
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <StorageDiagnostics />
+      <div style={{ background: "#fff", border: "1px solid #E4E7EC", borderRadius: 12, padding: "14px 16px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 3 }}>管理者密碼</div>
+          <div style={{ fontSize: 11.5, color: "#9CA3AF" }}>切換到管理者模式需要輸入此密碼，建議定期更換並避免分享給不需要編輯權限的人。</div>
+        </div>
+        <PrimaryButton onClick={() => setShowPwModal(true)}>修改密碼</PrimaryButton>
+      </div>
+
+      <div style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 10, padding: "11px 16px", marginBottom: 16, fontSize: 12, color: "#1E40AF" }}>
+        💡 針對熱銷或重要品項，手動設定安全水位（台）。當三倉合計庫存低於此數字時，系統會在「補貨提醒」頁自動列出警示。設為 0 代表不追蹤此型號。
+      </div>
+
+      <div style={{ display: "flex", gap: 8, marginBottom: 14, alignItems: "center", flexWrap: "wrap" }}>
+        <div onClick={() => setCategory("all")} style={{
+          padding: "5px 13px", borderRadius: 20, fontSize: 11.5, fontWeight: 500, cursor: "pointer",
+          border: "1px solid " + (category === "all" ? "#15171C" : "#E4E7EC"),
+          background: category === "all" ? "#15171C" : "#fff", color: category === "all" ? "#fff" : "#6B7280",
+        }}>全部</div>
+        {CATEGORIES.map(cat => (
+          <div key={cat} onClick={() => setCategory(cat)} style={{
+            padding: "5px 13px", borderRadius: 20, fontSize: 11.5, fontWeight: 500, cursor: "pointer",
+            border: "1px solid " + (category === cat ? catColor(cat) : "#E4E7EC"),
+            background: category === cat ? catColor(cat) : "#fff", color: category === cat ? "#fff" : "#6B7280",
+          }}>{cat}</div>
+        ))}
+        <div style={{ flexGrow: 1, minWidth: 8 }} />
+        <TextInput placeholder="搜尋型號..." value={search} onChange={e => setSearch(e.target.value)} style={{ width: 200, flexShrink: 0 }} />
+      </div>
+
+      <div style={{ background: "#fff", border: "1px solid #E4E7EC", borderRadius: 12, overflow: "hidden" }}>
+        <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead><tr style={{ background: "#F7F8FA" }}>
+            <th style={thStyle}>型號</th><th style={thStyle}>分類</th><th style={thStyle}>目前台灣合計</th><th style={thStyle}>安全水位（台）</th>
+          </tr></thead>
+          <tbody>
+            {filtered.map(p => {
+              const total = p.kh + p.tc + p.tp;
+              return (
+                <tr key={p.model}>
+                  <td style={{ ...tdStyle, fontWeight: 700 }}>{p.model}</td>
+                  <td style={tdStyle}><Badge color={catColor(p.category)} bg={catColor(p.category) + "1A"}>{p.category}</Badge></td>
+                  <td style={{ ...tdStyle, fontFamily: "monospace" }}>{total}</td>
+                  <td style={tdStyle}>
+                    <input
+                      type="number" value={p.safetyStock}
+                      onChange={e => updateSafety(p.model, Number(e.target.value) || 0)}
+                      style={{ width: 90, padding: "5px 8px", borderRadius: 5, border: "1px solid #E4E7EC", fontSize: 12.5, fontFamily: "monospace" }}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        </div>
+      </div>
+
+      {showPwModal && (
+        <ChangePasswordModal
+          currentPassword={adminPassword}
+          onClose={() => setShowPwModal(false)}
+          onSave={(newPw) => { setAdminPassword(newPw); setShowPwModal(false); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function ChangePasswordModal({ currentPassword, onClose, onSave }) {
+  const [oldPw, setOldPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [error, setError] = useState("");
+
+  const submit = () => {
+    if (oldPw !== currentPassword) { setError("目前密碼輸入錯誤"); return; }
+    if (!newPw.trim()) { setError("新密碼不可空白"); return; }
+    if (newPw !== confirmPw) { setError("兩次輸入的新密碼不一致"); return; }
+    onSave(newPw.trim());
+  };
+
+  return (
+    <Modal title="修改管理者密碼" onClose={onClose} width={380}>
+      <Field label="目前密碼"><TextInput type="password" value={oldPw} onChange={e => setOldPw(e.target.value)} autoFocus /></Field>
+      <Field label="新密碼"><TextInput type="password" value={newPw} onChange={e => setNewPw(e.target.value)} /></Field>
+      <Field label="確認新密碼"><TextInput type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} /></Field>
+      {error && <div style={{ color: "#DC2626", fontSize: 12, marginBottom: 10 }}>{error}</div>}
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
+        <GhostButton onClick={onClose}>取消</GhostButton>
+        <PrimaryButton onClick={submit}>更新密碼</PrimaryButton>
+      </div>
+    </Modal>
+  );
+}
+
+// ============================================================
+// ERROR BOUNDARY — surfaces real errors instead of a silent
+// infinite spinner, especially important when this artifact is
+// opened from a standalone shared link rather than inside chat.
+// ============================================================
+class PlatformErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  componentDidCatch(error, info) {
+    console.error("InventoryPlatform crashed:", error, info);
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{
+          fontFamily: "'Inter', sans-serif", padding: 40, maxWidth: 560, margin: "40px auto",
+          background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 12, color: "#991B1B",
+        }}>
+          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>畫面載入失敗</div>
+          <div style={{ fontSize: 13, marginBottom: 12 }}>
+            這個平台在目前的環境中發生錯誤，無法正常顯示。請重新整理頁面再試一次；如果問題持續，請檢查網路連線是否能連到 Google 服務。
+          </div>
+          <div style={{ fontSize: 11.5, fontFamily: "monospace", background: "#fff", padding: 10, borderRadius: 6, color: "#7F1D1D", wordBreak: "break-all" }}>
+            {String(this.state.error && this.state.error.message ? this.state.error.message : this.state.error)}
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function InventoryPlatform() {
+  return (
+    <PlatformErrorBoundary>
+      <InventoryPlatformInner />
+    </PlatformErrorBoundary>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<InventoryPlatform />);
+
+  </script>
 </body>
 </html>
