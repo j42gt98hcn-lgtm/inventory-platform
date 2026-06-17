@@ -8,10 +8,10 @@
     body { margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang TC', 'Microsoft JhengHei', sans-serif; background: #F7F8FA; }
     #root { min-height: 100vh; }
   </style>
-  <!-- React + ReactDOM（生產版本） -->
+  <!-- React + ReactDOM（生產版本，鎖定版本避免未來自動升級造成不相容） -->
   <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
-  <!-- Babel：讓瀏覽器可以直接執行 JSX 語法，不需要額外的建置流程 -->
+  <!-- Babel：讓瀏覽器可以直接執行 JSX 語法，不需要額外的建置流程（鎖定版本） -->
   <script crossorigin src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
 </head>
 <body>
@@ -303,7 +303,7 @@ function Modal({ title, onClose, children, width = 480 }) {
     <div style={{
       position: "fixed", inset: 0, background: "rgba(15,17,21,0.45)",
       display: "flex", alignItems: isMobile ? "flex-end" : "center", justifyContent: "center",
-      zIndex: 100, padding: isMobile ? 0 : 20,
+      zIndex: 300, padding: isMobile ? 0 : 20,
     }} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div style={{
         background: "#fff",
@@ -557,11 +557,11 @@ function InventoryPlatformInner() {
           <div style={{ padding: 16, borderTop: "1px solid #2A2D33" }}>
             <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 8, paddingLeft: 2 }}>檢視模式</div>
             <div style={{ display: "flex", gap: 6 }}>
-              <button type="button" onClick={() => { requestAdminMode(); }} style={{
+              <button type="button" onClick={() => { requestAdminMode(); setMobileNavOpen(false); }} style={{
                 flex: 1, padding: "11px 0", borderRadius: 8, fontSize: 13.5, fontWeight: 600, cursor: "pointer",
                 border: "none", background: isAdmin ? "#2563EB" : "#2A2D33", color: isAdmin ? "#fff" : "#9CA3AF",
               }}>{isAdmin ? "管理者 🔓" : "管理者 🔒"}</button>
-              <button type="button" onClick={() => setMode("viewer")} style={{
+              <button type="button" onClick={() => { setMode("viewer"); setMobileNavOpen(false); }} style={{
                 flex: 1, padding: "11px 0", borderRadius: 8, fontSize: 13.5, fontWeight: 600, cursor: "pointer",
                 border: "none", background: !isAdmin ? "#2563EB" : "#2A2D33", color: !isAdmin ? "#fff" : "#9CA3AF",
               }}>僅檢視</button>
@@ -1841,42 +1841,6 @@ function ReorderPage({ products, transitItems }) {
 // ============================================================
 // SETTINGS PAGE (Safety Stock)
 // ============================================================
-// Surfaces what the Google Sheets backend actually does in the current
-// environment, so storage discrepancies between the Claude conversation and
-// a published link can be diagnosed from real evidence instead of guesswork.
-function StorageDiagnostics() {
-  const [report, setReport] = useState(null);
-
-  useEffect(() => {
-    (async () => {
-      const lines = [];
-      lines.push(`Apps Script API 網址：${SHEETS_API_URL}`);
-
-      try {
-        const raw = await sheetsGet("products");
-        const parsed = raw ? JSON.parse(raw) : null;
-        lines.push(`讀取測試（products 分頁）：成功，${parsed ? `讀到 ${parsed.length} 筆型號` : "目前是空的（尚未寫入任何資料）"}`);
-      } catch (e) {
-        lines.push(`讀取測試（products 分頁）：失敗，錯誤＝${e && e.message ? e.message : String(e)}`);
-      }
-
-      lines.push(`目前管理者密碼（用於寫入測試）：${currentAdminPassword}`);
-      lines.push(`提示：若要測試寫入是否正常，請直接到「安全水位設定」頁修改任一型號的安全水位，重新整理頁面後確認數字是否保留。`);
-
-      setReport(lines.join("\n"));
-    })();
-  }, []);
-
-  return (
-    <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: "12px 16px", marginBottom: 16 }}>
-      <div style={{ fontSize: 12.5, fontWeight: 700, color: "#92400E", marginBottom: 8 }}>儲存系統診斷（除錯用，問題排查完可移除）</div>
-      <pre style={{ fontSize: 11, color: "#78350F", whiteSpace: "pre-wrap", fontFamily: "monospace", margin: 0 }}>
-        {report || "正在檢測中..."}
-      </pre>
-    </div>
-  );
-}
-
 function SettingsPage({ products, setProducts, isAdmin, adminPassword, setAdminPassword }) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
@@ -1902,7 +1866,6 @@ function SettingsPage({ products, setProducts, isAdmin, adminPassword, setAdminP
 
   return (
     <div>
-      <StorageDiagnostics />
       <div style={{ background: "#fff", border: "1px solid #E4E7EC", borderRadius: 12, padding: "14px 16px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 3 }}>管理者密碼</div>
