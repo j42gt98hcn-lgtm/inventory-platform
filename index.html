@@ -684,7 +684,7 @@ function OverviewPage({ products, orders, transitItems, containers, unassigned, 
     unassigned.forEach(u => { m[u.model] = (m[u.model] || 0) + (u.qty || 0); });
     return Object.entries(m)
       .map(([model, qty]) => ({ model, qty }))
-      .sort((a, b) => b.qty - a.qty);
+      .sort((a, b) => a.model.localeCompare(b.model));
   }, [unassigned]);
 
   // Orders that haven't reached 已入庫 (warehouse-received) yet — i.e. still open/in-flight.
@@ -732,13 +732,24 @@ function OverviewPage({ products, orders, transitItems, containers, unassigned, 
           <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <tbody>
-              {arrivingSoonContainers.map(c => (
-                <tr key={c.id}>
-                  <td style={{ padding: "8px 14px", fontSize: 12, fontWeight: 600, borderBottom: "1px solid #E4E7EC" }}>{c.container || "櫃號待補上"}</td>
-                  <td style={{ padding: "8px 14px", fontSize: 11.5, color: "#6B7280", borderBottom: "1px solid #E4E7EC" }}>{c.supplier}・{WH_LABELS[c.warehouse]}</td>
-                  <td style={{ padding: "8px 14px", fontFamily: "monospace", fontSize: 11.5, color: "#0D9488", fontWeight: 600, borderBottom: "1px solid #E4E7EC", textAlign: "right" }}>{c.eta}</td>
-                </tr>
-              ))}
+              {arrivingSoonContainers.map(c => {
+                const models = transitItems
+                  .filter(t => t.containerId === c.id)
+                  .map(t => t.model)
+                  .sort((a, b) => a.localeCompare(b));
+                return (
+                  <tr key={c.id}>
+                    <td style={{ padding: "8px 14px", borderBottom: "1px solid #E4E7EC", verticalAlign: "top" }}>
+                      <div style={{ fontSize: 14, fontWeight: 600 }}>{c.container || "櫃號待補上"}</div>
+                      <div style={{ fontSize: 11.5, color: "#6B7280" }}>{c.supplier}・{WH_LABELS[c.warehouse]}</div>
+                      {models.length > 0 && (
+                        <div style={{ fontSize: 11, color: "#9CA3AF", marginTop: 3 }}>{models.join("、")}</div>
+                      )}
+                    </td>
+                    <td style={{ padding: "8px 14px", fontFamily: "monospace", fontSize: 11.5, color: "#0D9488", fontWeight: 600, borderBottom: "1px solid #E4E7EC", textAlign: "right", verticalAlign: "top", whiteSpace: "nowrap" }}>{c.eta}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           </div>
