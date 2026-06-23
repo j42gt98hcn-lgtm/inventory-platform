@@ -8,10 +8,8 @@
     body { margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang TC', 'Microsoft JhengHei', sans-serif; background: #F7F8FA; }
     #root { min-height: 100vh; }
   </style>
-  <!-- React + ReactDOM（生產版本，鎖定版本避免未來自動升級造成不相容） -->
   <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
-  <!-- Babel：讓瀏覽器可以直接執行 JSX 語法，不需要額外的建置流程（鎖定版本） -->
   <script crossorigin src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
 </head>
 <body>
@@ -381,9 +379,10 @@ function InventoryPlatformInner() {
   const [transitItems, setTransitItems, transitItemsLoaded] = useStoredState("inv_transit_items_v1", SEED_TRANSIT_ITEMS);
   const [poPending, setPoPending, poPendingLoaded] = useStoredState("inv_po_pending_v1", SEED_PO_PENDING);
   const [unassigned, setUnassigned, unassignedLoaded] = useStoredState("inv_unassigned_v1", []);
+  const [suppliers, setSuppliers, suppliersLoaded] = useStoredState("inv_suppliers_v1", ["澳柯瑪","冰泓","三勝","勞特","VESTFROST","奧馬","捷盛"]);
   const [adminPassword, setAdminPassword, passwordLoaded] = useStoredState("inv_admin_password_v1", "0000");
 
-  const allLoaded = productsLoaded && ordersLoaded && containersLoaded && transitItemsLoaded && poPendingLoaded && unassignedLoaded && passwordLoaded;
+  const allLoaded = productsLoaded && ordersLoaded && containersLoaded && transitItemsLoaded && poPendingLoaded && unassignedLoaded && suppliersLoaded && passwordLoaded;
 
   const isAdmin = mode === "admin";
 
@@ -659,9 +658,10 @@ function InventoryPlatformInner() {
               unassigned={unassigned} setUnassigned={setUnassigned}
               isAdmin={isAdmin} productByModel={productByModel}
               onConfirmReceived={confirmContainerReceived}
+              suppliers={suppliers}
             />
           ) : page === "orders" ? (
-            <OrdersPage orders={orders} setOrders={setOrders} isAdmin={isAdmin} products={products} onTransferItem={transferOrderItemToUnassigned} onConfirmShipment={confirmOrderShipment} />
+            <OrdersPage orders={orders} setOrders={setOrders} isAdmin={isAdmin} products={products} onTransferItem={transferOrderItemToUnassigned} onConfirmShipment={confirmOrderShipment} suppliers={suppliers} setSuppliers={setSuppliers} />
           ) : page === "reorder" ? (
             <ReorderPage products={products} transitItems={transitItems} />
           ) : page === "settings" ? (
@@ -824,7 +824,7 @@ function InventoryPage({ products, setProducts, isAdmin, transitItems, container
   const filtered = useMemo(() => {
     let data = products.filter(p => p.model.toLowerCase().includes(search.toLowerCase()));
     if (category !== "all") data = data.filter(p => p.category === category);
-    return data;
+    return [...data].sort((a, b) => a.model.localeCompare(b.model));
   }, [products, category, search]);
 
   const updateField = (model, field, value) => {
@@ -1096,18 +1096,34 @@ function AddProductModal({ onClose, onAdd, existingModels }) {
 // ============================================================
 // TRANSIT & UNASSIGNED PAGE
 // ============================================================
-function TransitPage({ containers, setContainers, transitItems, setTransitItems, poPending, setPoPending, unassigned, setUnassigned, isAdmin, productByModel, onConfirmReceived }) {
+function TransitPage({ containers, setContainers, transitItems, setTransitItems, poPending, setPoPending, unassigned, setUnassigned, isAdmin, productByModel, onConfirmReceived, suppliers }) {
   const [wh, setWh] = useState("kh");
   const [showAddTransit, setShowAddTransit] = useState(false);
   const [editingContainerId, setEditingContainerId] = useState(null);
   const [showAddUnassigned, setShowAddUnassigned] = useState(false);
   const [confirmReceiveContainerId, setConfirmReceiveContainerId] = useState(null);
+  const [editingUnassignedModel, setEditingUnassignedModel] = useState(null); // model being edited
+  const [editingUnassignedQty, setEditingUnassignedQty] = useState("");
 
   const containersForWh = containers.filter(c => c.warehouse === wh);
   const poForWh = poPending.filter(p => p.warehouse === wh);
 
   const deletePo = (id) => setPoPending(prev => prev.filter(p => p.id !== id));
   const deleteUnassigned = (id) => setUnassigned(prev => prev.filter(u => u.id !== id));
+
+  const saveUnassignedQty = (model, newTotal) => {
+    // current total across all records for this model
+    const records = unassigned.filter(u => u.model === model);
+    const currentTotal = records.reduce((a, u) => a + (u.qty || 0), 0);
+    const delta = newTotal - currentTotal;
+    if (delta === 0) return;
+    // apply delta to the first record; if that would go negative, clamp at 0
+    const firstId = records[0].id;
+    setUnassigned(prev => prev.map(u => {
+      if (u.id !== firstId) return u;
+      return { ...u, qty: Math.max(0, u.qty + delta) };
+    }).filter(u => u.qty > 0));
+  };
 
   const deductUnassigned = (id, amount, recreateInfo) => {
     setUnassigned(prev => {
@@ -1185,18 +1201,18 @@ function TransitPage({ containers, setContainers, transitItems, setTransitItems,
               <div key={container.id} style={{ background: "#fff", border: "1px solid #E4E7EC", borderRadius: 12, overflow: "hidden" }}>
                 {/* Row 1: container number (or a "not yet filled" prompt) */}
                 <div style={{ padding: "10px 16px 4px", background: "#F0FDFA" }}>
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: container.container ? "#0D9488" : "#D97706" }}>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: container.container ? "#0D9488" : "#D97706" }}>
                     🚢 {container.container || "櫃號待補上"}
                   </div>
-                  <div style={{ fontSize: 11, color: "#6B7280", marginTop: 2 }}>
+                  <div style={{ fontSize: 12.5, color: "#6B7280", marginTop: 2 }}>
                     {items.length} 個品項，共 {groupQty} 台
                   </div>
                 </div>
                 {/* Row 2: supplier / free time / eta */}
                 <div style={{ padding: "4px 16px 9px", background: "#F0FDFA", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 11.5, color: "#374151" }}>廠商：<b>{container.supplier}</b></span>
-                  <span style={{ fontSize: 11.5, color: "#374151" }}>FREE TIME：<b>{container.freeTime || "（尚未補上）"}</b></span>
-                  <span style={{ fontSize: 11.5, color: "#374151", fontFamily: "monospace" }}>預計到港日：<b>{container.eta}</b></span>
+                  <span style={{ fontSize: 14, color: "#374151" }}>廠商：<b>{container.supplier}</b></span>
+                  <span style={{ fontSize: 14, color: "#374151" }}>FREE TIME：<b>{container.freeTime || "（尚未補上）"}</b></span>
+                  <span style={{ fontSize: 14, color: "#374151", fontFamily: "monospace" }}>預計到港日：<b>{container.eta}</b></span>
                   {isAdmin && (
                     <span style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
                       <PrimaryButton onClick={() => setConfirmReceiveContainerId(container.id)}>✓ 確認入庫</PrimaryButton>
@@ -1208,7 +1224,7 @@ function TransitPage({ containers, setContainers, transitItems, setTransitItems,
                 {/* Row 2.5: accessories note, only shown when present */}
                 {container.accessories && (
                   <div style={{ padding: "6px 16px", background: "#FEF9EC", borderTop: "1px solid #FDE9C8" }}>
-                    <span style={{ fontSize: 11.5, color: "#92400E" }}>📦 附帶零件：<b>{container.accessories}</b>（不計入庫存）</span>
+                    <span style={{ fontSize: 12.5, color: "#92400E" }}>📦 附帶零件：<b>{container.accessories}</b>（不計入庫存）</span>
                   </div>
                 )}
                 {/* Row 3+: per-model detail */}
@@ -1220,7 +1236,7 @@ function TransitPage({ containers, setContainers, transitItems, setTransitItems,
                   <tbody>
                     {items.map(t => (
                       <tr key={t.id}>
-                        <td style={{ ...tdStyle, fontWeight: 700 }}>
+                        <td style={{ ...tdStyle, fontWeight: 700, fontSize: 14 }}>
                           {t.model}
                           {t.deductedFromUnassigned > 0 && (
                             <span title={`新增時已從待分配庫存扣除 ${t.deductedFromUnassigned} 台；刪除整櫃會把這個數量退回待分配庫存`} style={{ marginLeft: 6, fontSize: 10.5, color: "#7C3AED", fontWeight: 500 }}>
@@ -1228,7 +1244,7 @@ function TransitPage({ containers, setContainers, transitItems, setTransitItems,
                             </span>
                           )}
                         </td>
-                        <td style={{ ...tdStyle, fontFamily: "monospace", color: "#0D9488", fontWeight: 700, textAlign: "right" }}>+{t.qty}</td>
+                        <td style={{ ...tdStyle, fontFamily: "monospace", color: "#0D9488", fontWeight: 700, textAlign: "right", fontSize: 14 }}>+{t.qty}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1283,19 +1299,57 @@ function TransitPage({ containers, setContainers, transitItems, setTransitItems,
           <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead><tr style={{ background: "#F7F8FA" }}>
-              <th style={thStyle}>型號</th><th style={thStyle}>供應商</th><th style={{ ...thStyle, textAlign: "right" }}>數量</th><th style={thStyle}>備註</th>
+              <th style={thStyle}>型號</th><th style={{ ...thStyle, textAlign: "right" }}>數量</th>
               {isAdmin && <th style={thStyle}>操作</th>}
             </tr></thead>
             <tbody>
-              {unassigned.map(u => (
-                <tr key={u.id}>
-                  <td style={{ ...tdStyle, fontWeight: 700 }}>{u.model}</td>
-                  <td style={tdStyle}>{u.supplier}</td>
-                  <td style={{ ...tdStyle, fontFamily: "monospace", color: "#7C3AED", fontWeight: 700, textAlign: "right" }}>{u.qty}</td>
-                  <td style={{ ...tdStyle, color: "#9CA3AF", fontSize: 11.5 }}>{u.note}</td>
-                  {isAdmin && <td style={tdStyle}><IconButton danger onClick={() => deleteUnassigned(u.id)}>刪除</IconButton></td>}
-                </tr>
-              ))}
+              {(() => {
+                // Group by model, sum quantities, sort A-Z
+                const grouped = {};
+                unassigned.forEach(u => {
+                  if (!grouped[u.model]) grouped[u.model] = { qty: 0, ids: [] };
+                  grouped[u.model].qty += (u.qty || 0);
+                  grouped[u.model].ids.push(u.id);
+                });
+                return Object.entries(grouped)
+                  .sort(([a], [b]) => a.localeCompare(b))
+                  .map(([model, { qty, ids }]) => {
+                    const isEditingThis = editingUnassignedModel === model;
+                    return (
+                    <tr key={model}>
+                      <td style={{ ...tdStyle, fontWeight: 700 }}>{model}</td>
+                      <td style={{ ...tdStyle, fontFamily: "monospace", color: "#7C3AED", fontWeight: 700, textAlign: "right" }}>
+                        {isAdmin && isEditingThis ? (
+                          <NumberCell
+                            value={Number(editingUnassignedQty)}
+                            onChange={v => setEditingUnassignedQty(String(v))}
+                          />
+                        ) : qty}
+                      </td>
+                      {isAdmin && (
+                        <td style={tdStyle}>
+                          <div style={{ display: "flex", gap: 6 }}>
+                            {isEditingThis ? (
+                              <IconButton onClick={() => {
+                                saveUnassignedQty(model, Number(editingUnassignedQty) || 0);
+                                setEditingUnassignedModel(null);
+                              }}>完成</IconButton>
+                            ) : (
+                              <IconButton onClick={() => {
+                                setEditingUnassignedModel(model);
+                                setEditingUnassignedQty(String(qty));
+                              }}>編輯</IconButton>
+                            )}
+                            {ids.map(id => (
+                              <IconButton key={id} danger onClick={() => deleteUnassigned(id)}>刪除</IconButton>
+                            ))}
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                    );
+                  });
+              })()}
             </tbody>
           </table>
           </div>
@@ -1314,10 +1368,11 @@ function TransitPage({ containers, setContainers, transitItems, setTransitItems,
           existingContainers={allExistingContainerNames}
           unassigned={unassigned}
           onDeductUnassigned={deductUnassigned}
+          suppliers={suppliers}
         />
       )}
       {showAddUnassigned && (
-        <AddUnassignedModal onClose={() => setShowAddUnassigned(false)} onAdd={(rec) => { setUnassigned(prev => [...prev, rec]); setShowAddUnassigned(false); }} />
+        <AddUnassignedModal onClose={() => setShowAddUnassigned(false)} onAdd={(rec) => { setUnassigned(prev => [...prev, rec]); setShowAddUnassigned(false); }} suppliers={suppliers} />
       )}
       {editingContainerId && (
         <EditContainerModal
@@ -1327,6 +1382,7 @@ function TransitPage({ containers, setContainers, transitItems, setTransitItems,
           unassigned={unassigned}
           onDeductUnassigned={deductUnassigned}
           onClose={() => setEditingContainerId(null)}
+          suppliers={suppliers}
           onSave={(updatedContainer, updatedItems, newItems, removedItemIds) => {
             setContainers(prev => prev.map(c => c.id === updatedContainer.id ? updatedContainer : c));
             setTransitItems(prev => [
@@ -1367,8 +1423,8 @@ function TransitPage({ containers, setContainers, transitItems, setTransitItems,
   );
 }
 
-function AddTransitModal({ wh, onClose, onAddContainer, existingContainers, unassigned, onDeductUnassigned }) {
-  const [supplier, setSupplier] = useState(SUPPLIERS[0]);
+function AddTransitModal({ wh, onClose, onAddContainer, existingContainers, unassigned, onDeductUnassigned, suppliers }) {
+  const [supplier, setSupplier] = useState(suppliers[0]);
   const [container, setContainer] = useState("");
   const [freeTime, setFreeTime] = useState("");
   const [eta, setEta] = useState("");
@@ -1411,7 +1467,7 @@ function AddTransitModal({ wh, onClose, onAddContainer, existingContainers, unas
       </div>
       <FormGrid columns={2}>
         <Field label="廠商">
-          <Select value={supplier} onChange={e => setSupplier(e.target.value)}>{SUPPLIERS.map(s => <option key={s} value={s}>{s}</option>)}</Select>
+          <Select value={supplier} onChange={e => setSupplier(e.target.value)}>{suppliers.map(s => <option key={s} value={s}>{s}</option>)}</Select>
         </Field>
         <Field label="預計到港日（共用）"><TextInput type="date" value={eta} onChange={e => setEta(e.target.value)} /></Field>
         <Field label="櫃號 / 船班（選填，等到貨通知書來了再補上也可以）">
@@ -1469,7 +1525,7 @@ function AddTransitModal({ wh, onClose, onAddContainer, existingContainers, unas
   );
 }
 
-function EditContainerModal({ container, items, existingContainers, unassigned, onDeductUnassigned, onClose, onSave }) {
+function EditContainerModal({ container, items, existingContainers, unassigned, onDeductUnassigned, onClose, onSave, suppliers }) {
   const [supplier, setSupplier] = useState(container.supplier);
   const [containerNo, setContainerNo] = useState(container.container || "");
   const [freeTime, setFreeTime] = useState(container.freeTime || "");
@@ -1528,7 +1584,7 @@ function EditContainerModal({ container, items, existingContainers, unassigned, 
     <Modal title="編輯在途櫃" onClose={onClose} width={640}>
       <FormGrid columns={2}>
         <Field label="廠商">
-          <Select value={supplier} onChange={e => setSupplier(e.target.value)}>{SUPPLIERS.map(s => <option key={s} value={s}>{s}</option>)}</Select>
+          <Select value={supplier} onChange={e => setSupplier(e.target.value)}>{suppliers.map(s => <option key={s} value={s}>{s}</option>)}</Select>
         </Field>
         <Field label="預計到港日（共用，會套用到下方所有新增的型號）">
           <TextInput type="date" value={eta} onChange={e => setEta(e.target.value)} />
@@ -1589,9 +1645,9 @@ function EditContainerModal({ container, items, existingContainers, unassigned, 
   );
 }
 
-function AddUnassignedModal({ onClose, onAdd }) {
+function AddUnassignedModal({ onClose, onAdd, suppliers }) {
   const [model, setModel] = useState("");
-  const [supplier, setSupplier] = useState(SUPPLIERS[0]);
+  const [supplier, setSupplier] = useState(suppliers[0]);
   const [qty, setQty] = useState(0);
   const [note, setNote] = useState("");
 
@@ -1603,7 +1659,7 @@ function AddUnassignedModal({ onClose, onAdd }) {
   return (
     <Modal title="新增待分配記錄" onClose={onClose}>
       <Field label="型號"><TextInput value={model} onChange={e => setModel(e.target.value)} autoFocus /></Field>
-      <Field label="供應商"><Select value={supplier} onChange={e => setSupplier(e.target.value)}>{SUPPLIERS.map(s => <option key={s} value={s}>{s}</option>)}</Select></Field>
+      <Field label="供應商"><Select value={supplier} onChange={e => setSupplier(e.target.value)}>{suppliers.map(s => <option key={s} value={s}>{s}</option>)}</Select></Field>
       <Field label="數量"><TextInput type="number" value={qty} onChange={e => setQty(e.target.value)} /></Field>
       <Field label="備註"><TextInput value={note} onChange={e => setNote(e.target.value)} placeholder="例如：2026/06 生產，尚未決定送往哪個倉庫" /></Field>
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
@@ -1617,14 +1673,40 @@ function AddUnassignedModal({ onClose, onAdd }) {
 // ============================================================
 // ORDERS PAGE
 // ============================================================
-function OrdersPage({ orders, setOrders, isAdmin, products, onTransferItem, onConfirmShipment }) {
+function OrdersPage({ orders, setOrders, isAdmin, products, onTransferItem, onConfirmShipment, suppliers, setSuppliers }) {
   const { isMobile } = useViewport();
   const [supplierFilter, setSupplierFilter] = useState("all");
   const [expandedId, setExpandedId] = useState(null);
   const [showAddOrder, setShowAddOrder] = useState(false);
   const [editingOrder, setEditingOrder] = useState(null);
+  const [showCompleted, setShowCompleted] = useState(false);
+  const [completedYear, setCompletedYear] = useState("all");
+  const [showAddSupplier, setShowAddSupplier] = useState(false);
 
-  const filtered = supplierFilter === "all" ? orders : orders.filter(o => o.supplier === supplierFilter);
+  const STATUS_PRIORITY = ["下訂確認", "生產中", "已生產完", "待出貨", "海運中", "已到港", "清關中", "取消", "已入庫"];
+
+  const completedOrders = useMemo(() => orders.filter(o => o.status === "已入庫"), [orders]);
+  const completedYears = useMemo(() => {
+    const years = [...new Set(completedOrders.map(o => (o.orderDate || "").slice(0, 4)).filter(Boolean))].sort().reverse();
+    return years;
+  }, [completedOrders]);
+
+  const filtered = useMemo(() => {
+    let data = supplierFilter === "all" ? orders : orders.filter(o => o.supplier === supplierFilter);
+    if (!showCompleted) {
+      data = data.filter(o => o.status !== "已入庫");
+    } else if (completedYear !== "all") {
+      data = data.filter(o => o.status !== "已入庫" || (o.orderDate || "").startsWith(completedYear));
+    }
+    return [...data].sort((a, b) => {
+      const pa = STATUS_PRIORITY.indexOf(a.status);
+      const pb = STATUS_PRIORITY.indexOf(b.status);
+      if (pa !== pb) return pa - pb;
+      return (b.orderDate || "").localeCompare(a.orderDate || "");
+    });
+  }, [orders, supplierFilter, showCompleted, completedYear]);
+
+  const completedCount = completedOrders.length;
 
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [confirmShipOrderId, setConfirmShipOrderId] = useState(null);
@@ -1646,7 +1728,7 @@ function OrdersPage({ orders, setOrders, isAdmin, products, onTransferItem, onCo
           border: "1px solid " + (supplierFilter === "all" ? "#15171C" : "#E4E7EC"),
           background: supplierFilter === "all" ? "#15171C" : "#fff", color: supplierFilter === "all" ? "#fff" : "#6B7280",
         }}>全部供應商 ({orders.length})</div>
-        {SUPPLIERS.map(s => {
+        {suppliers.map(s => {
           const count = orders.filter(o => o.supplier === s).length;
           if (count === 0) return null;
           const active = supplierFilter === s;
@@ -1659,6 +1741,18 @@ function OrdersPage({ orders, setOrders, isAdmin, products, onTransferItem, onCo
           );
         })}
         <div style={{ flex: 1 }} />
+        {completedCount > 0 && (
+          <GhostButton active={showCompleted} onClick={() => setShowCompleted(v => !v)}>
+            {showCompleted ? "隱藏已完成訂單" : `顯示已完成訂單（${completedCount}）`}
+          </GhostButton>
+        )}
+        {showCompleted && completedYears.length > 1 && (
+          <Select value={completedYear} onChange={e => setCompletedYear(e.target.value)} style={{ padding: "4px 8px", fontSize: 11.5, borderRadius: 6, border: "1px solid #E4E7EC" }}>
+            <option value="all">全部年份</option>
+            {completedYears.map(y => <option key={y} value={y}>{y} 年</option>)}
+          </Select>
+        )}
+        {isAdmin && <GhostButton onClick={() => setShowAddSupplier(true)}>＋ 新增供應商</GhostButton>}
         {isAdmin && <PrimaryButton onClick={() => setShowAddOrder(true)}>＋ 新增訂單</PrimaryButton>}
       </div>
 
@@ -1712,7 +1806,7 @@ function OrdersPage({ orders, setOrders, isAdmin, products, onTransferItem, onCo
                         <th style={{ ...thStyle, background: "transparent" }}>狀態</th>
                       </tr></thead>
                       <tbody>
-                        {o.items.map((it, idx) => (
+                        {[...o.items].sort((a, b) => a.model.localeCompare(b.model)).map((it, idx) => (
                           <tr key={idx}>
                             <td style={{ ...tdStyle, fontWeight: 600 }}>{it.model}</td>
                             <td style={{ ...tdStyle, fontFamily: "monospace" }}>{it.qty}</td>
@@ -1776,6 +1870,7 @@ function OrdersPage({ orders, setOrders, isAdmin, products, onTransferItem, onCo
           onClose={() => setShowAddOrder(false)}
           onSave={(order) => { setOrders(prev => [order, ...prev]); setShowAddOrder(false); }}
           products={products}
+          suppliers={suppliers}
         />
       )}
       {editingOrder && (
@@ -1785,6 +1880,7 @@ function OrdersPage({ orders, setOrders, isAdmin, products, onTransferItem, onCo
           onClose={() => setEditingOrder(null)}
           onSave={(order) => { setOrders(prev => prev.map(o => o.id === editingOrder.id ? order : o)); setEditingOrder(null); }}
           products={products}
+          suppliers={suppliers}
         />
       )}
 
@@ -1803,7 +1899,36 @@ function OrdersPage({ orders, setOrders, isAdmin, products, onTransferItem, onCo
           onConfirm={(eta) => { onConfirmShipment(confirmShipOrderId, eta); setConfirmShipOrderId(null); }}
         />
       )}
+      {showAddSupplier && (
+        <AddSupplierModal
+          suppliers={suppliers}
+          onClose={() => setShowAddSupplier(false)}
+          onAdd={(name) => { setSuppliers(prev => [...prev, name]); setShowAddSupplier(false); }}
+        />
+      )}
     </div>
+  );
+}
+
+function AddSupplierModal({ suppliers, onClose, onAdd }) {
+  const [name, setName] = useState("");
+  const alreadyExists = suppliers.map(s => s.trim().toLowerCase()).includes(name.trim().toLowerCase());
+  const submit = () => {
+    if (!name.trim() || alreadyExists) return;
+    onAdd(name.trim());
+  };
+  return (
+    <Modal title="新增供應商" onClose={onClose} width={360}>
+      <Field label="供應商名稱">
+        <TextInput value={name} onChange={e => setName(e.target.value)} autoFocus placeholder="例如：新廠商名稱" onKeyDown={e => { if (e.key === "Enter") submit(); }} />
+      </Field>
+      {alreadyExists && name.trim() && <div style={{ fontSize: 12, color: "#DC2626", marginBottom: 8 }}>這個供應商名稱已存在</div>}
+      <div style={{ fontSize: 11.5, color: "#9CA3AF", marginBottom: 14 }}>目前供應商：{suppliers.join("、")}</div>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+        <GhostButton onClick={onClose}>取消</GhostButton>
+        <PrimaryButton onClick={submit}>新增</PrimaryButton>
+      </div>
+    </Modal>
   );
 }
 
@@ -1833,11 +1958,11 @@ function ConfirmShipmentModal({ order, onClose, onConfirm }) {
   );
 }
 
-function OrderFormModal({ title, initial, onClose, onSave, products }) {
+function OrderFormModal({ title, initial, onClose, onSave, products, suppliers }) {
   const { isMobile } = useViewport();
   const [id, setId] = useState(initial?.id || "");
   const [totalAmount, setTotalAmount] = useState(initial?.totalAmount ?? "");
-  const [supplier, setSupplier] = useState(initial?.supplier || SUPPLIERS[0]);
+  const [supplier, setSupplier] = useState(initial?.supplier || (suppliers && suppliers[0]) || "");
   const [orderDate, setOrderDate] = useState(initial?.orderDate || "");
   const [currency, setCurrency] = useState(initial?.currency || "USD");
   const [status, setStatus] = useState(initial?.status || STATUSES[0]);
@@ -1867,7 +1992,7 @@ function OrderFormModal({ title, initial, onClose, onSave, products }) {
     <Modal title={title} onClose={onClose} width={560}>
       <FormGrid columns={2}>
         <Field label="訂單編號"><TextInput value={id} onChange={e => setId(e.target.value)} disabled={!!initial} style={initial ? { background: "#F7F8FA", color: "#9CA3AF" } : {}} /></Field>
-        <Field label="供應商"><Select value={supplier} onChange={e => setSupplier(e.target.value)}>{SUPPLIERS.map(s => <option key={s} value={s}>{s}</option>)}</Select></Field>
+        <Field label="供應商"><Select value={supplier} onChange={e => setSupplier(e.target.value)}>{suppliers.map(s => <option key={s} value={s}>{s}</option>)}</Select></Field>
         <Field label="下單日期"><TextInput type="date" value={orderDate} onChange={e => setOrderDate(e.target.value)} /></Field>
         <Field label="幣別"><Select value={currency} onChange={e => setCurrency(e.target.value)}><option value="USD">USD</option><option value="EUR">EUR</option></Select></Field>
         <Field label="狀態"><Select value={status} onChange={e => setStatus(e.target.value)}>{STATUSES.map(s => <option key={s} value={s}>{s}</option>)}</Select></Field>
@@ -2020,7 +2145,7 @@ function SettingsPage({ products, setProducts, isAdmin, adminPassword, setAdminP
   const filtered = useMemo(() => {
     let data = products.filter(p => p.model.toLowerCase().includes(search.toLowerCase()));
     if (category !== "all") data = data.filter(p => p.category === category);
-    return data;
+    return [...data].sort((a, b) => a.model.localeCompare(b.model));
   }, [products, category, search]);
 
   const updateSafety = (model, value) => {
